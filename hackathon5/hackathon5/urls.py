@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from hackapp.views import welcome,EmployeeAPI, EmployeeUpdateView, EmployeeDeleteView,SignIn,SignOut
+from hackapp.views import welcome,EmployeeAPI, EmployeeUpdateView, EmployeeDeleteView,SignIn,SignOut,GrievanceAPI
 from hackapp.attendance_leave_views import (
     AttendanceCheckInOut, AttendanceHistory, MonthlyAttendanceReport,
     LeaveBalance, LeaveApplication, LeaveApproval, ManagerLeaveRequests

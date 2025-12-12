@@ -165,8 +165,8 @@ class EmployeeAPI(APIView):
                 "email": email,
                 "documents": documents,
                 "password": password,
-                "created_date": datetime.utcnow(),
-                "modified_date": datetime.utcnow(),
+                "created_date": datetime.now(),
+                "modified_date": datetime.now(),
                 "deleted_yn": 0
             }
 
@@ -400,6 +400,147 @@ class SignOut(APIView):
             db["sessions"].delete_one({"session_token": session_token})
 
             return JsonResponse({"status": "success", "message": "Logout successful"})
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+class GrievanceAPI(APIView):
+    def post(self, request):
+        try:
+            collection = db["grievances"]
+
+            # Safely parse JSON body
+            try:
+                payload = json.loads(request.body.decode("utf-8"))
+            except json.JSONDecodeError:
+                return JsonResponse(
+                    {"status": "error", "message": "Invalid JSON body"},
+                    status=400
+                )
+
+            category = payload.get("category")
+            priority = payload.get("priority")
+            subject = payload.get("subject")
+            description = payload.get("description")
+            status = payload.get("status", "OPEN")
+            user_id = payload.get("user_id")
+
+            # Basic validation
+            missing = []
+            for field_name, value in [
+                ("category", category),
+                ("priority", priority),
+                ("subject", subject),
+                ("description", description),
+            ]:
+                if value in (None, "", []):
+                    missing.append(field_name)
+
+            if missing:
+                return JsonResponse(
+                    {
+                        "status": "error",
+                        "message": f"Missing required fields: {', '.join(missing)}",
+                    },
+                    status=400,
+                )
+
+            valid_priorities = {"LOW", "MEDIUM", "HIGH"}
+            if str(priority).upper() not in valid_priorities:
+                return JsonResponse(
+                    {
+                        "status": "error",
+                        "message": f"Invalid priority. Valid values: {sorted(valid_priorities)}",
+                    },
+                    status=400,
+                )
+
+            now = datetime.now()
+            grievance_data = {
+                "category": category,
+                "priority": str(priority).upper(),
+                "subject": subject,
+                "description": description,
+                "status": status,
+                "user_id": user_id,
+                "created_date": now,
+                "modified_date": now,
+            }
+
+            # Insert and capture inserted_id
+            result = collection.insert_one(grievance_data)
+            inserted_id = result.inserted_id
+
+            # Convert ObjectId to string if needed
+            inserted_id_str = str(inserted_id) if ObjectId and isinstance(inserted_id, ObjectId) else inserted_id
+
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "message": "Grievance created",
+                    "id": inserted_id_str,
+                },
+                status=201,
+            )
+
+        except Exception as e:
+            return JsonResponse(
+                {"status": "error", "message": str(e)},
+                status=500,
+            )
+    
+    def get(self, request,gri_oid=None):
+        
+        try:
+            collection = db["grievances"]
+
+            # If a specific grievance ObjectId is provided, return that document
+            if gri_oid:
+                try:
+                    oid = ObjectId(gri_oid)
+                except Exception:
+                    return JsonResponse(
+                        {"status": "error", "message": "Invalid grievance ObjectId"},
+                        status=400
+                    )
+
+                grievance = collection.find_one(
+                    {"_id": oid},
+                    {"_id": 0}  # Exclude Mongo _id to mirror your employees API
+                )
+
+                if not grievance:
+                    return JsonResponse(
+                        {"status": "error", "message": "Grievance not found"},
+                        status=404
+                    )
+
+                return JsonResponse(
+                    {"status": "success", "grievance": grievance},
+                    status=200
+                )
+
+            # Otherwise, list grievances (READ-ONLY) with optional status filter
+            query = {}
+
+            status_filter = request.GET.get("status")
+            if status_filter:
+                status_upper = status_filter.upper()
+                valid_statuses = {"OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"}
+                if status_upper not in valid_statuses:
+                    return JsonResponse(
+                        {"status": "error",
+                        "message": "Invalid status. Use one of: OPEN, IN_PROGRESS, RESOLVED, CLOSED"},
+                        status=400
+                    )
+                query["status"] = status_upper
+
+            grievances = list(collection.find(query, {"_id": 0}).sort("created_date", -1))
+
+            return JsonResponse(
+                {"status": "success", "grievances": grievances},
+                status=200
+            )
 
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)

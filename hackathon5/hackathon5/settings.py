@@ -43,9 +43,10 @@ INSTALLED_APPS = [
     'corsheaders'
 ]
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = [    
     "http://localhost:8080",
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "https://peoplex.netlify.app"
     
     
 ]
@@ -67,9 +68,11 @@ CORS_ALLOW_METHODS = [
 
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
