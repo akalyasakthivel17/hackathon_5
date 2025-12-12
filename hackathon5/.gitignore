@@ -62,3 +62,4 @@ datasets/
 *.pdf
 
 embedding_model/
+__pycache__/

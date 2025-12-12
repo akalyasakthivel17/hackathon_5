@@ -1,0 +1,369 @@
+{
+    "info": {
+        "name": "Attendance & Leave Management APIs",
+        "description": "Complete API collection for Hackathon Point 2.\n\nHOW TO USE:\n1. For Approve/Reject: First apply for leave or get pending requests to get a real leave_id\n2. Replace the leave_id in the URL with the actual ID from the response\n3. manager_id is just the employee ID of the person approving (e.g., EMP001, EMP002)\n\nCurrent leave_id in examples: 693c170e90e1132a58ba8a17 (from database)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Attendance APIs",
+            "item": [
+                {
+                    "name": "Check-In",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"emp_id\": \"EMP002\",\n  \"action\": \"check-in\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/attendance/checkinout/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "attendance",
+                                "checkinout",
+                                ""
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Check-Out",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"emp_id\": \"EMP002\",\n  \"action\": \"check-out\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/attendance/checkinout/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "attendance",
+                                "checkinout",
+                                ""
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Attendance History",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/attendance/history/EMP002?month=2025-12",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "attendance",
+                                "history",
+                                "EMP002"
+                            ],
+                            "query": [
+                                {
+                                    "key": "month",
+                                    "value": "2025-12",
+                                    "description": "Optional: Filter by month (YYYY-MM)"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Monthly Attendance Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/attendance/report/EMP002?month=2025-12",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "attendance",
+                                "report",
+                                "EMP002"
+                            ],
+                            "query": [
+                                {
+                                    "key": "month",
+                                    "value": "2025-12",
+                                    "description": "Required: Month (YYYY-MM)"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Leave Management APIs",
+            "item": [
+                {
+                    "name": "Get Leave Balance",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/leave/balance/EMP002",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "leave",
+                                "balance",
+                                "EMP002"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Apply for Leave",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"emp_id\": \"EMP002\",\n  \"leave_type\": \"casual\",\n  \"start_date\": \"2025-12-20\",\n  \"end_date\": \"2025-12-22\",\n  \"reason\": \"Personal work\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/leave/apply/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "leave",
+                                "apply",
+                                ""
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Apply for Leave",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"emp_id\": \"EMP003\",\n  \"leave_type\": \"sick\",\n  \"start_date\": \"2025-12-10\",\n  \"end_date\": \"2025-12-18\",\n  \"reason\": \"Accident\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/leave/apply/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "leave",
+                                "apply",
+                                ""
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get My Leave Applications",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/leave/applications/EMP002",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "leave",
+                                "applications",
+                                "EMP002"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Manager: Get All Leave Requests",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/leave/manager/requests/?status=pending",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "leave",
+                                "manager",
+                                "requests",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "pending",
+                                    "description": "Optional: pending/approved/rejected"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Manager: Approve Leave",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"approve\",\n  \"manager_id\": \"EMP001\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/leave/approve/693c170e90e1132a58ba8a17",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "leave",
+                                "approve",
+                                "693c170e90e1132a58ba8a17"
+                            ]
+                        },
+                        "description": "Approve a leave request. Replace the leave_id in URL with actual ID from 'Apply for Leave' response or 'Manager: Get All Leave Requests'. The manager_id is the employee ID of the person approving (e.g., EMP001)."
+                    }
+                },
+                {
+                    "name": "Manager: Reject Leave",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"reject\",\n  \"manager_id\": \"EMP001\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/leave/approve/693c170e90e1132a58ba8a17",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "leave",
+                                "approve",
+                                "693c170e90e1132a58ba8a17"
+                            ]
+                        },
+                        "description": "Reject a leave request. Replace the leave_id in URL with actual ID. The manager_id is the employee ID of the person rejecting (e.g., EMP001). Note: Balance is NOT deducted when rejecting."
+                    }
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://127.0.0.1:8000",
+            "type": "string",
+            "description": "Base URL for all API endpoints"
+        }
+    ]
+}
