@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from hackapp.views import welcome,EmployeeAPI, EmployeeUpdateView, EmployeeDeleteView,SignIn,SignOut
+from hackapp.views import welcome,EmployeeAPI, EmployeeUpdateView, EmployeeDeleteView,SignIn,SignOut,GrievanceAPI
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -27,4 +27,5 @@ urlpatterns = [
     path("api/employee/delete/<str:emp_oid>", EmployeeDeleteView.as_view()),
     path("api/signin/", SignIn.as_view()),
     path("api/signout/", SignOut.as_view()),
+    path("api/post_grievance", GrievanceAPI.as_view()),
 ]
