@@ -27,6 +27,11 @@ from hackapp.events_engagement_views import (
     KudosWall, KudosDetail, KudosLike, KudosComment,
     AnnouncementsBoard, AnnouncementDetail, PinAnnouncement, PinnedAnnouncements
 )
+from hackapp.travel_expense_views import (
+    TravelRequest, TravelRequestDetail, TravelApproval,
+    ExpenseSubmission, ExpenseDetail, ExpenseReceipt,
+    ExpenseApproval, ExpenseReimbursement, ReimbursementSummary
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -72,4 +77,21 @@ urlpatterns = [
     path("api/events/announcements/<str:announcement_id>", AnnouncementDetail.as_view()),
     path("api/events/announcements/<str:announcement_id>/pin/", PinAnnouncement.as_view()),
     path("api/events/announcements/pinned/", PinnedAnnouncements.as_view()),
+    
+    # Travel Request APIs
+    path("api/travel/request/", TravelRequest.as_view()),
+    path("api/travel/request/<str:travel_id>", TravelRequestDetail.as_view()),
+    path("api/travel/request/<str:travel_id>/approve/", TravelApproval.as_view()),
+    
+    # Expense Management APIs
+    path("api/expense/submit/", ExpenseSubmission.as_view()),
+    path("api/expense/", ExpenseSubmission.as_view()),
+    path("api/expense/<str:expense_id>", ExpenseDetail.as_view()),
+    path("api/expense/<str:expense_id>/receipt/", ExpenseReceipt.as_view()),
+    path("api/expense/<str:expense_id>/approve/", ExpenseApproval.as_view()),
+    path("api/expense/<str:expense_id>/reimburse/", ExpenseReimbursement.as_view()),
+    path("api/expense/reimbursement/summary/<str:emp_id>", ReimbursementSummary.as_view()),
+    
+    # Grievance API
+    path("api/grievance/", GrievanceAPI.as_view()),
 ]

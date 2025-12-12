@@ -1,0 +1,591 @@
+{
+    "info": {
+        "name": "Task 7: Travel & Expense Management APIs",
+        "description": "Complete API collection for travel requests and expense management with receipt uploads.\n\nFeatures:\n- Travel Requests: Submit, approve, track travel\n- Expense Management: Submit with receipts, approve, reimburse\n- Role-Based Access: HR/Manager approvals\n- Reimbursement Tracking: pending → approved → paid\n\nTotal: 15 APIs",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Travel Requests",
+            "item": [
+                {
+                    "name": "Submit Travel Request",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"emp_id\": \"EMP008\",\n  \"purpose\": \"Client Meeting\",\n  \"destination\": \"Mumbai\",\n  \"from_date\": \"2025-12-20\",\n  \"to_date\": \"2025-12-22\",\n  \"estimated_cost\": 15000,\n  \"travel_mode\": \"FLIGHT\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/travel/request/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "travel",
+                                "request",
+                                ""
+                            ]
+                        },
+                        "description": "Submit travel request. Travel modes: FLIGHT, TRAIN, BUS, CAR"
+                    }
+                },
+                {
+                    "name": "List All Travel Requests",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/travel/request/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "travel",
+                                "request",
+                                ""
+                            ]
+                        },
+                        "description": "Get all travel requests"
+                    }
+                },
+                {
+                    "name": "List Pending Travel Requests",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/travel/request/?status=pending",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "travel",
+                                "request",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "pending"
+                                }
+                            ]
+                        },
+                        "description": "Filter by status: pending, approved, rejected"
+                    }
+                },
+                {
+                    "name": "Get Travel Request Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/travel/request/TRV001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "travel",
+                                "request",
+                                "TRV001"
+                            ]
+                        },
+                        "description": "Get specific travel request by travel_id"
+                    }
+                },
+                {
+                    "name": "Update Travel Request",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"purpose\": \"Updated Client Meeting\",\n  \"estimated_cost\": 20000\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/travel/request/TRV001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "travel",
+                                "request",
+                                "TRV001"
+                            ]
+                        },
+                        "description": "Update travel request (only pending requests)"
+                    }
+                },
+                {
+                    "name": "Cancel Travel Request",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/travel/request/TRV001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "travel",
+                                "request",
+                                "TRV001"
+                            ]
+                        },
+                        "description": "Soft delete travel request"
+                    }
+                },
+                {
+                    "name": "Approve Travel Request",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"approve\",\n  \"approver_id\": \"EMP001\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/travel/request/TRV001/approve/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "travel",
+                                "request",
+                                "TRV001",
+                                "approve",
+                                ""
+                            ]
+                        },
+                        "description": "Approve travel request (HR/Manager only)"
+                    }
+                },
+                {
+                    "name": "Reject Travel Request",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"reject\",\n  \"approver_id\": \"EMP001\",\n  \"rejection_reason\": \"Budget constraints\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/travel/request/TRV001/approve/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "travel",
+                                "request",
+                                "TRV001",
+                                "approve",
+                                ""
+                            ]
+                        },
+                        "description": "Reject travel request with reason"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Expense Management",
+            "item": [
+                {
+                    "name": "Submit Expense with Receipt",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"emp_id\": \"EMP008\",\n  \"travel_id\": \"TRV001\",\n  \"expense_type\": \"TRAVEL\",\n  \"category\": \"Flight Ticket\",\n  \"amount\": 8500,\n  \"expense_date\": \"2025-12-20\",\n  \"description\": \"Mumbai flight ticket\",\n  \"receipt\": {\n    \"file_name\": \"receipt.pdf\",\n    \"file_data\": \"JVBERi0xLjQKJeLjz9MKMyAwIG9iago8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL1Jlc291cmNlczw8L0ZvbnQ8PC9GMSA1IDAgUj4+Pj4vTWVkaWFCb3hbMCAwIDYxMiA3OTJdL0NvbnRlbnRzIDQgMCBSPj4KZW5kb2JqCg==\",\n    \"file_type\": \"application/pdf\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/expense/submit/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "expense",
+                                "submit",
+                                ""
+                            ]
+                        },
+                        "description": "Submit expense with base64 receipt. Types: TRAVEL, FOOD, ACCOMMODATION, TRANSPORT, OTHER"
+                    }
+                },
+                {
+                    "name": "List All Expenses",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/expense/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "expense",
+                                ""
+                            ]
+                        },
+                        "description": "Get all expenses (receipt data excluded)"
+                    }
+                },
+                {
+                    "name": "List Pending Expenses",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/expense/?status=pending",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "expense",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "pending"
+                                }
+                            ]
+                        },
+                        "description": "Filter by status: pending, approved, rejected"
+                    }
+                },
+                {
+                    "name": "Get Expense Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/expense/EXP001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "expense",
+                                "EXP001"
+                            ]
+                        },
+                        "description": "Get specific expense by expense_id (receipt data excluded)"
+                    }
+                },
+                {
+                    "name": "Download Receipt",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/expense/EXP001/receipt/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "expense",
+                                "EXP001",
+                                "receipt",
+                                ""
+                            ]
+                        },
+                        "description": "Get receipt (base64 data)"
+                    }
+                },
+                {
+                    "name": "Update Expense",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"amount\": 9000,\n  \"description\": \"Updated flight ticket cost\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/expense/EXP001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "expense",
+                                "EXP001"
+                            ]
+                        },
+                        "description": "Update expense (only pending expenses)"
+                    }
+                },
+                {
+                    "name": "Cancel Expense",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/expense/EXP001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "expense",
+                                "EXP001"
+                            ]
+                        },
+                        "description": "Soft delete expense"
+                    }
+                },
+                {
+                    "name": "Approve Expense (Manager)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"approve\",\n  \"approver_id\": \"EMP001\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/expense/EXP001/approve/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "expense",
+                                "EXP001",
+                                "approve",
+                                ""
+                            ]
+                        },
+                        "description": "Approve expense (Manager only)"
+                    }
+                },
+                {
+                    "name": "Reject Expense (Manager)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"reject\",\n  \"approver_id\": \"EMP001\",\n  \"rejection_reason\": \"Receipt not clear\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/expense/EXP001/approve/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "expense",
+                                "EXP001",
+                                "approve",
+                                ""
+                            ]
+                        },
+                        "description": "Reject expense with reason"
+                    }
+                },
+                {
+                    "name": "Process Reimbursement (HR)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"hr_id\": \"EMP002\",\n  \"payment_reference\": \"PAY123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/expense/EXP001/reimburse/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "expense",
+                                "EXP001",
+                                "reimburse",
+                                ""
+                            ]
+                        },
+                        "description": "Mark expense as reimbursed (HR only)"
+                    }
+                },
+                {
+                    "name": "Get Reimbursement Summary",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/expense/reimbursement/summary/EMP008",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "expense",
+                                "reimbursement",
+                                "summary",
+                                "EMP008"
+                            ]
+                        },
+                        "description": "Get summary: pending, approved, reimbursed amounts"
+                    }
+                }
+            ]
+        }
+    ]
+}
