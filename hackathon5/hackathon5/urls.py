@@ -21,6 +21,12 @@ from hackapp.attendance_leave_views import (
     AttendanceCheckInOut, AttendanceHistory, MonthlyAttendanceReport,
     LeaveBalance, LeaveApplication, LeaveApproval, ManagerLeaveRequests
 )
+from hackapp.events_engagement_views import (
+    UpcomingBirthdays, TodayBirthdays,
+    EventCalendar, EventDetail, UpcomingEvents,
+    KudosWall, KudosDetail, KudosLike, KudosComment,
+    AnnouncementsBoard, AnnouncementDetail, PinAnnouncement, PinnedAnnouncements
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -43,4 +49,27 @@ urlpatterns = [
     path("api/leave/applications/<str:emp_id>", LeaveApplication.as_view()),
     path("api/leave/approve/<str:leave_id>", LeaveApproval.as_view()),
     path("api/leave/manager/requests/", ManagerLeaveRequests.as_view()),
+    
+    # Birthdays APIs
+    path("api/events/birthdays/upcoming/", UpcomingBirthdays.as_view()),
+    path("api/events/birthdays/today/", TodayBirthdays.as_view()),
+    
+    # Event Calendar APIs
+    path("api/events/calendar/", EventCalendar.as_view()),
+    path("api/events/calendar/<str:event_id>", EventDetail.as_view()),
+    path("api/events/calendar/upcoming/", UpcomingEvents.as_view()),
+    
+    # Kudos/Recognition Wall APIs
+    path("api/events/kudos/", KudosWall.as_view()),
+    path("api/events/kudos/<str:kudos_id>", KudosDetail.as_view()),
+    path("api/events/kudos/<str:kudos_id>/like/", KudosLike.as_view()),
+    path("api/events/kudos/<str:kudos_id>/comment/", KudosComment.as_view()),
+    path("api/events/kudos/received/<str:emp_id>", KudosDetail.as_view()),
+    path("api/events/kudos/given/<str:emp_id>", KudosDetail.as_view()),
+    
+    # Announcements Board APIs
+    path("api/events/announcements/", AnnouncementsBoard.as_view()),
+    path("api/events/announcements/<str:announcement_id>", AnnouncementDetail.as_view()),
+    path("api/events/announcements/<str:announcement_id>/pin/", PinAnnouncement.as_view()),
+    path("api/events/announcements/pinned/", PinnedAnnouncements.as_view()),
 ]

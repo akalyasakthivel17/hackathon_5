@@ -1,0 +1,840 @@
+{
+    "info": {
+        "name": "Task 6: Company Events & Engagement APIs",
+        "description": "Complete API collection for birthdays, event calendar, kudos wall, and announcements board.\n\nFeatures:\n- Birthdays: Upcoming & today's birthdays\n- Event Calendar: CRUD for meetings, holidays, celebrations\n- Kudos Wall: Post, like, comment on recognition\n- Announcements: HR/Manager posts with pinning\n\nTotal: 21 APIs",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Birthdays",
+            "item": [
+                {
+                    "name": "Get Upcoming Birthdays",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/birthdays/upcoming/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "birthdays",
+                                "upcoming",
+                                ""
+                            ]
+                        },
+                        "description": "Get all birthdays in the next 30 days from employee DOB field"
+                    }
+                },
+                {
+                    "name": "Get Today's Birthdays",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/birthdays/today/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "birthdays",
+                                "today",
+                                ""
+                            ]
+                        },
+                        "description": "Get birthdays happening today"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Event Calendar",
+            "item": [
+                {
+                    "name": "Create Event",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Team Meeting\",\n  \"description\": \"Q4 Planning Discussion\",\n  \"event_type\": \"MEETING\",\n  \"event_date\": \"2025-12-25\",\n  \"start_time\": \"10:00\",\n  \"end_time\": \"11:00\",\n  \"location\": \"Conference Room A\",\n  \"created_by\": \"EMP008\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/calendar/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "calendar",
+                                ""
+                            ]
+                        },
+                        "description": "Create a new event. Types: MEETING, HOLIDAY, CELEBRATION"
+                    }
+                },
+                {
+                    "name": "Get All Events",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/calendar/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "calendar",
+                                ""
+                            ]
+                        },
+                        "description": "Get all events"
+                    }
+                },
+                {
+                    "name": "Get Events by Month",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/calendar/?month=2025-12",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "calendar",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "month",
+                                    "value": "2025-12",
+                                    "description": "Filter by month (YYYY-MM)"
+                                }
+                            ]
+                        },
+                        "description": "Filter events by month"
+                    }
+                },
+                {
+                    "name": "Get Events by Type",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/calendar/?type=MEETING",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "calendar",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "MEETING",
+                                    "description": "Filter by type: MEETING, HOLIDAY, CELEBRATION"
+                                }
+                            ]
+                        },
+                        "description": "Filter events by type"
+                    }
+                },
+                {
+                    "name": "Get Upcoming Events",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/calendar/upcoming/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "calendar",
+                                "upcoming",
+                                ""
+                            ]
+                        },
+                        "description": "Get events in next 30 days"
+                    }
+                },
+                {
+                    "name": "Get Event Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/calendar/EVT001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "calendar",
+                                "EVT001"
+                            ]
+                        },
+                        "description": "Get specific event by event_id"
+                    }
+                },
+                {
+                    "name": "Update Event",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Updated Team Meeting\",\n  \"description\": \"Updated description\",\n  \"location\": \"Conference Room B\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/calendar/EVT001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "calendar",
+                                "EVT001"
+                            ]
+                        },
+                        "description": "Update event details"
+                    }
+                },
+                {
+                    "name": "Delete Event",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/calendar/EVT001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "calendar",
+                                "EVT001"
+                            ]
+                        },
+                        "description": "Soft delete event"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Kudos Wall",
+            "item": [
+                {
+                    "name": "Post Kudos",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"from_emp_id\": \"EMP008\",\n  \"to_emp_id\": \"EMP002\",\n  \"message\": \"Great job on the presentation! Your insights were valuable.\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/kudos/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "kudos",
+                                ""
+                            ]
+                        },
+                        "description": "Post appreciation/recognition to another employee"
+                    }
+                },
+                {
+                    "name": "Get Kudos Wall",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/kudos/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "kudos",
+                                ""
+                            ]
+                        },
+                        "description": "Get all kudos (wall view)"
+                    }
+                },
+                {
+                    "name": "Get Kudos Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/kudos/KUD001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "kudos",
+                                "KUD001"
+                            ]
+                        },
+                        "description": "Get specific kudos by kudos_id"
+                    }
+                },
+                {
+                    "name": "Like Kudos",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"emp_id\": \"EMP001\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/kudos/KUD001/like/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "kudos",
+                                "KUD001",
+                                "like",
+                                ""
+                            ]
+                        },
+                        "description": "Like/unlike kudos (toggle)"
+                    }
+                },
+                {
+                    "name": "Add Comment to Kudos",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"emp_id\": \"EMP001\",\n  \"comment\": \"Well deserved! Keep up the great work.\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/kudos/KUD001/comment/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "kudos",
+                                "KUD001",
+                                "comment",
+                                ""
+                            ]
+                        },
+                        "description": "Add comment to kudos"
+                    }
+                },
+                {
+                    "name": "Get Kudos Received by Employee",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/kudos/received/EMP002",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "kudos",
+                                "received",
+                                "EMP002"
+                            ]
+                        },
+                        "description": "Get all kudos received by specific employee"
+                    }
+                },
+                {
+                    "name": "Get Kudos Given by Employee",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/kudos/given/EMP008?type=given",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "kudos",
+                                "given",
+                                "EMP008"
+                            ],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "given"
+                                }
+                            ]
+                        },
+                        "description": "Get all kudos given by specific employee"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Announcements",
+            "item": [
+                {
+                    "name": "Create Announcement (HR/Manager)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Office Closure Notice\",\n  \"content\": \"The office will be closed on December 25th for Christmas. Happy Holidays!\",\n  \"priority\": \"HIGH\",\n  \"posted_by\": \"EMP008\",\n  \"target_audience\": \"ALL\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/announcements/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "announcements",
+                                ""
+                            ]
+                        },
+                        "description": "Create announcement (Only HR and Manager can post). Priority: LOW/MEDIUM/HIGH. Target: ALL/EMPLOYEE/HR/MANAGER"
+                    }
+                },
+                {
+                    "name": "Get All Announcements",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/announcements/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "announcements",
+                                ""
+                            ]
+                        },
+                        "description": "Get all announcements (pinned first, then by date)"
+                    }
+                },
+                {
+                    "name": "Get Announcements by Priority",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/announcements/?priority=HIGH",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "announcements",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "priority",
+                                    "value": "HIGH",
+                                    "description": "Filter by priority: LOW, MEDIUM, HIGH"
+                                }
+                            ]
+                        },
+                        "description": "Filter announcements by priority"
+                    }
+                },
+                {
+                    "name": "Get Announcements by Target",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/announcements/?target=ALL",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "announcements",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "target",
+                                    "value": "ALL",
+                                    "description": "Filter by target: ALL, EMPLOYEE, HR, MANAGER"
+                                }
+                            ]
+                        },
+                        "description": "Filter announcements by target audience"
+                    }
+                },
+                {
+                    "name": "Get Pinned Announcements",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/announcements/pinned/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "announcements",
+                                "pinned",
+                                ""
+                            ]
+                        },
+                        "description": "Get only pinned announcements"
+                    }
+                },
+                {
+                    "name": "Get Announcement Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/announcements/ANN001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "announcements",
+                                "ANN001"
+                            ]
+                        },
+                        "description": "Get specific announcement by announcement_id"
+                    }
+                },
+                {
+                    "name": "Update Announcement",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Updated Office Closure Notice\",\n  \"content\": \"Updated content\",\n  \"priority\": \"MEDIUM\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/announcements/ANN001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "announcements",
+                                "ANN001"
+                            ]
+                        },
+                        "description": "Update announcement details"
+                    }
+                },
+                {
+                    "name": "Delete Announcement",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/announcements/ANN001",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "announcements",
+                                "ANN001"
+                            ]
+                        },
+                        "description": "Soft delete announcement"
+                    }
+                },
+                {
+                    "name": "Pin Announcement",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"pin\": true\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/announcements/ANN001/pin/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "announcements",
+                                "ANN001",
+                                "pin",
+                                ""
+                            ]
+                        },
+                        "description": "Pin announcement (set pin: true to pin, false to unpin)"
+                    }
+                },
+                {
+                    "name": "Unpin Announcement",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"pin\": false\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/events/announcements/ANN001/pin/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "events",
+                                "announcements",
+                                "ANN001",
+                                "pin",
+                                ""
+                            ]
+                        },
+                        "description": "Unpin announcement"
+                    }
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://127.0.0.1:8000",
+            "type": "string"
+        }
+    ]
+}
