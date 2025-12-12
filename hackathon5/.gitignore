@@ -1,0 +1,64 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Database files
+db.sqlite3
+
+# Environment variables
+.env
+
+# Django stuff
+*.log
+migrations/__pycache__/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# AI-ML
+# Ignore Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Ignore environment files
+.env
+*.env
+
+# Ignore virtual environment folders
+env/
+venv/
+rag_env/
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore test results and logs
+*.log
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore compiled files
+*.so
+*.dll
+*.exe
+
+# Ignore model and cache directories
+*.ckpt
+*.pt
+*.h5
+*.pkl
+.cache/
+datasets/
+
+# Ignore media files (optional, if generated)
+*.png
+*.jpg
+*.jpeg
+*.pdf
+
+embedding_model/
