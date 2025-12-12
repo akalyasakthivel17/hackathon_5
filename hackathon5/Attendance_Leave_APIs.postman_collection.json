@@ -1,7 +1,7 @@
 {
     "info": {
         "name": "Attendance & Leave Management APIs",
-        "description": "Complete API collection for Hackathon Point 2.\n\nHOW TO USE:\n1. For Approve/Reject: First apply for leave or get pending requests to get a real leave_id\n2. Replace the leave_id in the URL with the actual ID from the response\n3. manager_id is just the employee ID of the person approving (e.g., EMP001, EMP002)\n\nCurrent leave_id in examples: 693c170e90e1132a58ba8a17 (from database)",
+        "description": "Complete API collection for Hackathon Point 2.\n\nROLE-BASED HIERARCHY:\n- Employee leaves → Approved by HR (approver_id: EMP002)\n- HR leaves → Approved by Manager (approver_id: EMP001)\n\nHOW TO USE:\n1. For Approve/Reject: Use approver_id (EMP002 for HR, EMP001 for Manager)\n2. For viewing requests: Use viewer_id (HR sees employee leaves, Manager sees HR leaves)\n3. Replace leave_id in URL with actual ID from response\n\nCurrent leave_id in examples: 693c170e90e1132a58ba8a17 (from database)",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "item": [
@@ -261,7 +261,7 @@
                         "method": "GET",
                         "header": [],
                         "url": {
-                            "raw": "http://127.0.0.1:8000/api/leave/manager/requests/?status=pending",
+                            "raw": "http://127.0.0.1:8000/api/leave/manager/requests/?status=pending&viewer_id=EMP002",
                             "protocol": "http",
                             "host": [
                                 "127",
@@ -282,6 +282,11 @@
                                     "key": "status",
                                     "value": "pending",
                                     "description": "Optional: pending/approved/rejected"
+                                },
+                                {
+                                    "key": "viewer_id",
+                                    "value": "EMP002",
+                                    "description": "Required: EMP002 for HR (sees employee leaves), EMP001 for Manager (sees HR leaves)"
                                 }
                             ]
                         }
@@ -299,7 +304,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"action\": \"approve\",\n  \"manager_id\": \"EMP001\"\n}"
+                            "raw": "{\n  \"action\": \"approve\",\n  \"approver_id\": \"EMP002\"\n}"
                         },
                         "url": {
                             "raw": "http://127.0.0.1:8000/api/leave/approve/693c170e90e1132a58ba8a17",
@@ -318,7 +323,7 @@
                                 "693c170e90e1132a58ba8a17"
                             ]
                         },
-                        "description": "Approve a leave request. Replace the leave_id in URL with actual ID from 'Apply for Leave' response or 'Manager: Get All Leave Requests'. The manager_id is the employee ID of the person approving (e.g., EMP001)."
+                        "description": "Approve a leave request. ROLE-BASED: Employee leaves approved by HR, HR leaves approved by Manager. Use approver_id (EMP002 for HR, EMP001 for Manager). Replace leave_id with actual ID from response."
                     }
                 },
                 {
@@ -333,7 +338,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"action\": \"reject\",\n  \"manager_id\": \"EMP001\"\n}"
+                            "raw": "{\n  \"action\": \"reject\",\n  \"approver_id\": \"EMP002\"\n}"
                         },
                         "url": {
                             "raw": "http://127.0.0.1:8000/api/leave/approve/693c170e90e1132a58ba8a17",
@@ -352,7 +357,7 @@
                                 "693c170e90e1132a58ba8a17"
                             ]
                         },
-                        "description": "Reject a leave request. Replace the leave_id in URL with actual ID. The manager_id is the employee ID of the person rejecting (e.g., EMP001). Note: Balance is NOT deducted when rejecting."
+                        "description": "Reject a leave request. ROLE-BASED: Use approver_id (EMP002 for HR rejecting employee leaves, EMP001 for Manager rejecting HR leaves). Balance is NOT deducted when rejecting."
                     }
                 }
             ]

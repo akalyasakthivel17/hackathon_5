@@ -416,18 +416,18 @@ class LeaveApplication(APIView):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LeaveApproval(APIView):
-    """Manager approval workflow for leave"""
+    """Role-based leave approval workflow"""
     
     def post(self, request, leave_id):
         try:
             data = json.loads(request.body.decode('utf-8'))
             action = data.get("action")  # approve or reject
-            manager_id = data.get("manager_id")
+            approver_id = data.get("approver_id")  # Changed from manager_id to approver_id
             
-            if not action or not manager_id:
+            if not action or not approver_id:
                 return JsonResponse({
                     "status": "error",
-                    "message": "action and manager_id are required"
+                    "message": "action and approver_id are required"
                 }, status=400)
             
             if action not in ["approve", "reject"]:
@@ -451,6 +451,55 @@ class LeaveApproval(APIView):
                     "message": f"Leave already {leave_app['status']}"
                 }, status=400)
             
+            # Get employee who applied for leave
+            applicant = employee_collection.find_one({"emp_id": leave_app["emp_id"], "deleted_yn": 0})
+            if not applicant:
+                return JsonResponse({
+                    "status": "error",
+                    "message": "Applicant employee not found"
+                }, status=404)
+            
+            # Get approver details
+            approver = employee_collection.find_one({"emp_id": approver_id, "deleted_yn": 0})
+            if not approver:
+                return JsonResponse({
+                    "status": "error",
+                    "message": "Approver not found"
+                }, status=404)
+            
+            # Get roles (default to EMPLOYEE if not set)
+            applicant_role = applicant.get("role", "EMPLOYEE").upper()
+            approver_role = approver.get("role", "EMPLOYEE").upper()
+            
+            # Role-based approval hierarchy validation
+            # Employee leaves → approved by HR
+            # HR leaves → approved by Manager
+            # Manager cannot approve employee leaves (only HR can)
+            
+            if applicant_role == "EMPLOYEE":
+                # Employee leaves must be approved by HR
+                if approver_role != "HR":
+                    return JsonResponse({
+                        "status": "error",
+                        "message": "Employee leaves can only be approved by HR"
+                    }, status=403)
+            
+            elif applicant_role == "HR":
+                # HR leaves must be approved by Manager
+                if approver_role != "MANAGER":
+                    return JsonResponse({
+                        "status": "error",
+                        "message": "HR leaves can only be approved by Manager"
+                    }, status=403)
+            
+            elif applicant_role == "MANAGER":
+                # Managers cannot apply for leave in this system
+                # Or you can add logic for who approves manager leaves
+                return JsonResponse({
+                    "status": "error",
+                    "message": "Manager leave approval not configured"
+                }, status=400)
+            
             # Update leave status
             new_status = "approved" if action == "approve" else "rejected"
             
@@ -459,7 +508,8 @@ class LeaveApproval(APIView):
                 {
                     "$set": {
                         "status": new_status,
-                        "approved_by": manager_id,
+                        "approved_by": approver_id,
+                        "approved_by_role": approver_role,
                         "approved_date": datetime.utcnow()
                     }
                 }
@@ -477,9 +527,11 @@ class LeaveApproval(APIView):
             
             return JsonResponse({
                 "status": "success",
-                "message": f"Leave {new_status} successfully",
+                "message": f"Leave {new_status} successfully by {approver_role}",
                 "leave_id": leave_id,
-                "new_status": new_status
+                "new_status": new_status,
+                "approved_by": approver_id,
+                "approved_by_role": approver_role
             }, status=200)
         
         except Exception as e:
@@ -489,24 +541,59 @@ class LeaveApproval(APIView):
             }, status=500)
 
 
+
 @method_decorator(csrf_exempt, name='dispatch')
 class ManagerLeaveRequests(APIView):
-    """Get all pending leave requests for manager dashboard"""
+    """Get leave requests based on role (HR sees employee leaves, Manager sees HR leaves)"""
     
     def get(self, request):
         try:
             status_filter = request.GET.get("status", "pending")
+            viewer_id = request.GET.get("viewer_id")  # ID of person viewing (HR or Manager)
+            
+            if not viewer_id:
+                return JsonResponse({
+                    "status": "error",
+                    "message": "viewer_id parameter is required"
+                }, status=400)
+            
+            # Get viewer details to check their role
+            viewer = employee_collection.find_one({"emp_id": viewer_id, "deleted_yn": 0})
+            if not viewer:
+                return JsonResponse({
+                    "status": "error",
+                    "message": "Viewer not found"
+                }, status=404)
+            
+            viewer_role = viewer.get("role", "EMPLOYEE").upper()
             
             # Get all leave applications with the specified status
             leaves = list(leave_collection.find({"status": status_filter}, {"_id": 1}).sort("applied_date", -1))
             
-            # Enrich with employee details
+            # Enrich with employee details and filter based on viewer role
             result = []
             for leave in leaves:
                 leave_id = str(leave["_id"])
                 leave_data = leave_collection.find_one({"_id": leave["_id"]})
                 
-                emp = employee_collection.find_one({"emp_id": leave_data["emp_id"]}, {"_id": 0, "name": 1, "email": 1})
+                emp = employee_collection.find_one(
+                    {"emp_id": leave_data["emp_id"]}, 
+                    {"_id": 0, "name": 1, "email": 1, "role": 1}
+                )
+                
+                if not emp:
+                    continue
+                
+                applicant_role = emp.get("role", "EMPLOYEE").upper()
+                
+                # Filter based on viewer role
+                # HR can only see EMPLOYEE leaves
+                # Manager can only see HR leaves
+                if viewer_role == "HR" and applicant_role != "EMPLOYEE":
+                    continue  # Skip non-employee leaves
+                
+                if viewer_role == "MANAGER" and applicant_role != "HR":
+                    continue  # Skip non-HR leaves
                 
                 # Convert datetime to string
                 if leave_data.get("applied_date"):
@@ -517,8 +604,9 @@ class ManagerLeaveRequests(APIView):
                 result.append({
                     "leave_id": leave_id,
                     "emp_id": leave_data["emp_id"],
-                    "emp_name": emp.get("name") if emp else "Unknown",
-                    "emp_email": emp.get("email") if emp else "Unknown",
+                    "emp_name": emp.get("name", "Unknown"),
+                    "emp_email": emp.get("email", "Unknown"),
+                    "emp_role": applicant_role,
                     "leave_type": leave_data["leave_type"],
                     "start_date": leave_data["start_date"],
                     "end_date": leave_data["end_date"],
@@ -530,8 +618,10 @@ class ManagerLeaveRequests(APIView):
             
             return JsonResponse({
                 "status": "success",
+                "viewer_role": viewer_role,
                 "total_requests": len(result),
-                "leave_requests": result
+                "leave_requests": result,
+                "note": f"{viewer_role} can only see {'EMPLOYEE' if viewer_role == 'HR' else 'HR'} leaves"
             }, status=200)
         
         except Exception as e:
@@ -539,3 +629,4 @@ class ManagerLeaveRequests(APIView):
                 "status": "error",
                 "message": str(e)
             }, status=500)
+
