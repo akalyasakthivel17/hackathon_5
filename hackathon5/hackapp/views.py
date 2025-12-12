@@ -150,6 +150,7 @@ class EmployeeAPI(APIView):
             name = data.get("name")
             dob = data.get("dob")
             email = data.get("email")
+            role = data.get("role", "USER")
             documents = data.get("documents", [])
 
             # Generate EMP001, EMP002, ...
@@ -163,6 +164,7 @@ class EmployeeAPI(APIView):
                 "name": name,
                 "dob": dob,
                 "email": email,
+                "role":role,
                 "documents": documents,
                 "password": password,
                 "created_date": datetime.now(),
@@ -218,23 +220,63 @@ HR Team
                 "message": str(e)
             }, status=500)
     # GET All active employees or search
+    # def get(self, request, emp_oid=None):
+    #     try:
+    #         collection = db["employees"]
+    #         if emp_oid:
+                
+    #             emp = collection.find_one(
+    #                 {"_id": ObjectId(emp_oid), "deleted_yn": 0},
+    #                 {"_id": 0}
+    #             )
+
+    #             if not emp:
+    #                 return JsonResponse({"status": "error", "message": "Employee not found"}, status=404)
+
+    #             return JsonResponse({"status": "success", "employee": emp}, status=200)
+
+    #         # GET all employees
+    #         employees = list(collection.find({"deleted_yn": 0}, {"_id": 0}))
+    #         return JsonResponse({"status": "success", "employees": employees}, status=200)
+
+    #     except Exception as e:
+    #         return JsonResponse({"status": "error", "message": str(e)}, status=500)
     def get(self, request, emp_oid=None):
         try:
             collection = db["employees"]
+
             if emp_oid:
-                
                 emp = collection.find_one(
                     {"_id": ObjectId(emp_oid), "deleted_yn": 0},
-                    {"_id": 0}
+                    {"_id": 1, "emp_id": 1, "name": 1, "dob": 1, "email": 1,
+                    "documents": 1, "password": 1, "created_date": 1,
+                    "modified_date": 1, "deleted_yn": 1}
                 )
 
                 if not emp:
                     return JsonResponse({"status": "error", "message": "Employee not found"}, status=404)
 
+                # Convert ObjectId to string
+                emp["emp_oid"] = str(emp["_id"])
+                del emp["_id"]
+
                 return JsonResponse({"status": "success", "employee": emp}, status=200)
 
             # GET all employees
-            employees = list(collection.find({"deleted_yn": 0}, {"_id": 0}))
+            employees = list(
+                collection.find(
+                    {"deleted_yn": 0},
+                    {"_id": 1, "emp_id": 1, "name": 1, "dob": 1, "email": 1,
+                    "documents": 1, "password": 1, "created_date": 1,
+                    "modified_date": 1, "deleted_yn": 1}
+                )
+            )
+
+            # Convert OID for all
+            for emp in employees:
+                emp["emp_oid"] = str(emp["_id"])
+                del emp["_id"]
+
             return JsonResponse({"status": "success", "employees": employees}, status=200)
 
         except Exception as e:
@@ -489,58 +531,162 @@ class GrievanceAPI(APIView):
                 status=500,
             )
     
-    def get(self, request,gri_oid=None):
-        
+    
+class GetGrievanceView(APIView):
+
+    def get(self, request, user_id):
+        grievance_col = db["grievances"]
+        employee_col = db["employees"]
         try:
-            collection = db["grievances"]
+            # ----------------------------
+            # 1️⃣ Fetch employee role 
+            # ----------------------------
+            user = employee_col.find_one({"_id": ObjectId(user_id)})
 
-            # If a specific grievance ObjectId is provided, return that document
-            if gri_oid:
-                try:
-                    oid = ObjectId(gri_oid)
-                except Exception:
-                    return JsonResponse(
-                        {"status": "error", "message": "Invalid grievance ObjectId"},
-                        status=400
-                    )
+            if not user:
+                return Response({
+                    "status": "error",
+                    "message": "Invalid user_id"
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-                grievance = collection.find_one(
-                    {"_id": oid},
-                    {"_id": 0}  # Exclude Mongo _id to mirror your employees API
-                )
+            user_role = user.get("role", "").lower()  # user / hr
 
-                if not grievance:
-                    return JsonResponse(
-                        {"status": "error", "message": "Grievance not found"},
-                        status=404
-                    )
-
-                return JsonResponse(
-                    {"status": "success", "grievance": grievance},
-                    status=200
-                )
-
-            # Otherwise, list grievances (READ-ONLY) with optional status filter
+            # ----------------------------
+            # 2️⃣ Build MongoDB query
+            # ----------------------------
             query = {}
 
-            status_filter = request.GET.get("status")
+            # USER → only their grievances
+            if user_role == "user":
+                query["user_id"] = user_id
+
+            # HR → see all grievances (no filter)
+            elif user_role == "hr":
+                query = {}  # no restriction
+
+            else:
+                return Response({
+                    "status": "error",
+                    "message": "Unauthorized role"
+                }, status=status.HTTP_403_FORBIDDEN)
+
+            # ----------------------------
+            # 3️⃣ Apply status filter
+            # ----------------------------
+            status_filter = request.GET.get("status", None)
             if status_filter:
-                status_upper = status_filter.upper()
-                valid_statuses = {"OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"}
-                if status_upper not in valid_statuses:
-                    return JsonResponse(
-                        {"status": "error",
-                        "message": "Invalid status. Use one of: OPEN, IN_PROGRESS, RESOLVED, CLOSED"},
-                        status=400
-                    )
-                query["status"] = status_upper
+                query["status"] = status_filter.upper()
 
-            grievances = list(collection.find(query, {"_id": 0}).sort("created_date", -1))
+            # ----------------------------
+            # 4️⃣ Fetch from MongoDB
+            # ----------------------------
+            grievances = list(grievance_col.find(query))
 
-            return JsonResponse(
-                {"status": "success", "grievances": grievances},
-                status=200
-            )
+            # ----------------------------
+            # 5️⃣ Format response
+            # ----------------------------
+            output = []
+            for g in grievances:
+                output.append({
+                    "_id": str(g["_id"]),
+                    "category": g.get("category"),
+                    "priority": g.get("priority"),
+                    "subject": g.get("subject"),
+                    "description": g.get("description"),
+                    "status": g.get("status"),
+                    "user_id": g.get("user_id"),
+                    "created_date": g.get("created_date"),
+                    "modified_date": g.get("modified_date"),
+                })
+
+            return Response({
+                "status": "success",
+                "count": len(output),
+                "data": output
+            }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class HRReplyGrievanceView(APIView):
+
+    def post(self, request, grievance_id, hr_id):
+        try:
+            employee_col = db["employees"]
+            grievance_col = db["grievances"]
+            # -----------------------------------------
+            # 1️⃣ Validate HR user
+            # -----------------------------------------
+            hr_user = employee_col.find_one({"_id": ObjectId(hr_id)})
+
+            if not hr_user:
+                return Response({"status": "error", "message": "Invalid HR user id"},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            if hr_user.get("role", "").lower() != "hr":
+                return Response({"status": "error", "message": "Only HR can reply to grievances"},
+                                status=status.HTTP_403_FORBIDDEN)
+
+            # -----------------------------------------
+            # 2️⃣ Read inputs
+            # -----------------------------------------
+            reply_text = request.data.get("reply", "")
+            new_status = request.data.get("status", None)   # optional
+
+            if not reply_text:
+                return Response({"status": "error", "message": "Reply message required"},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # -----------------------------------------
+            # 3️⃣ Find existing grievance
+            # -----------------------------------------
+            grievance = grievance_col.find_one({"_id": ObjectId(grievance_id)})
+
+            if not grievance:
+                return Response({"status": "error", "message": "Invalid grievance_id"},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # -----------------------------------------
+            # 4️⃣ Prepare comment object
+            # -----------------------------------------
+            comment = {
+                "by": "HR",
+                "hr_id": hr_id,
+                "reply": reply_text,
+                "created_date": str(datetime.now())
+            }
+
+            # -----------------------------------------
+            # 5️⃣ Append reply to comments list
+            # -----------------------------------------
+            existing_comments = grievance.get("comments", [])
+            existing_comments.append(comment)
+
+            # -----------------------------------------
+            # 6️⃣ Update grievance status
+            # -----------------------------------------
+            update_data = {
+                "comments": existing_comments,
+                "modified_date": str(datetime.now()),
+            }
+
+            if new_status:
+                update_data["status"] = new_status.upper()
+
+            grievance_col.update_one(
+                {"_id": ObjectId(grievance_id)},
+                {"$set": update_data}
+            )
+
+            return Response({
+                "status": "success",
+                "message": "HR reply added successfully",
+                "data": update_data
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

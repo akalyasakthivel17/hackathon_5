@@ -16,7 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from hackapp.views import welcome,EmployeeAPI, EmployeeUpdateView, EmployeeDeleteView,SignIn,SignOut,GrievanceAPI
+from hackapp.views import (welcome,EmployeeAPI, EmployeeUpdateView, EmployeeDeleteView,SignIn,SignOut,GrievanceAPI, GetGrievanceView,
+                           HRReplyGrievanceView)
 from hackapp.attendance_leave_views import (
     AttendanceCheckInOut, AttendanceHistory, MonthlyAttendanceReport,
     LeaveBalance, LeaveApplication, LeaveApproval, ManagerLeaveRequests
@@ -31,6 +32,10 @@ urlpatterns = [
     path("api/employee/delete/<str:emp_oid>", EmployeeDeleteView.as_view()),
     path("api/signin/", SignIn.as_view()),
     path("api/signout/", SignOut.as_view()),
+    path("api/grievance/", GrievanceAPI.as_view(), name="grievance-api"),
+    path("api/grievance/get/<str:user_id>/", GetGrievanceView.as_view(), name="get-grievances"),
+    path("grievance/reply/<str:grievance_id>/<str:hr_id>/", HRReplyGrievanceView.as_view()),
+
     
     # Attendance APIs
     path("api/attendance/checkinout/", AttendanceCheckInOut.as_view()),
