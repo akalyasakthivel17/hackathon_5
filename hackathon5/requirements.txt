@@ -1,0 +1,5 @@
+djangorestframework==3.14.0
+django-cors-headers==4.6.0
+django
+pymongo
+gunicorn
