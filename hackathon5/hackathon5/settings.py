@@ -43,9 +43,10 @@ INSTALLED_APPS = [
     'corsheaders'
 ]
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = [    
     "http://localhost:8080",
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "https://peoplex.netlify.app"
     
     
 ]
