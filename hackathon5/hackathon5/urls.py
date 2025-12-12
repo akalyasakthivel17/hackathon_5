@@ -16,9 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from hackapp.views import welcome
+from hackapp.views import welcome,EmployeeAPI
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', welcome, name='score_resume'),
+    path('', welcome, name='welcome'),
+    path('api/employee/', EmployeeAPI.as_view(), name='employee_api'),  
 ]
