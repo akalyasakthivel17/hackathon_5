@@ -15,9 +15,15 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
+from django.contrib.auth.hashers import check_password
 import json
 from bson import ObjectId
-# Create your views here.
+from .models import Employee
+
+
+
+
+
 @api_view(["GET"])
 def welcome(request):   
     return JsonResponse({"message": "Welcome to the Resume Scorer python API!"})
@@ -332,3 +338,68 @@ class EmployeeDeleteView(APIView):
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
+import hashlib
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SignIn(APIView):
+    def post(self, request):
+        collection=db["employees"]
+        try:
+            body = json.loads(request.body.decode())
+            email = body.get("email")
+            password = body.get("password")
+
+            if not email or not password:
+                return JsonResponse({"status": "error", "message": "Email and password required"}, status=400)
+
+            hashed_pw = hash_password(password)
+
+            # Check employee in MongoDB
+            emp = collection.find_one({"email": email, "password": password, "deleted_yn": 0})
+
+            if not emp:
+                return JsonResponse({"status": "error", "message": "Invalid credentials"}, status=400)
+
+            # Create login session (optional)
+            session_token = hashlib.sha256(f"{email}{datetime.now()}".encode()).hexdigest()
+
+            db["sessions"].insert_one({
+                "emp_id": emp["emp_id"],
+                "email": email,
+                "session_token": session_token,
+                "login_time": datetime.now()
+            })
+
+            return JsonResponse({
+                "status": "success",
+                "message": "Login successful",
+                "data": {
+                    "emp_id": emp["emp_id"],
+                    "name": emp["name"],
+                    "role": emp.get("role", "EMPLOYEE"),
+                    "email": email,
+                    "session_token": session_token
+                }
+            })
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+class SignOut(APIView):
+    def post(self, request):
+        try:
+            body = json.loads(request.body.decode())
+            session_token = body.get("session_token")
+
+            if not session_token:
+                return JsonResponse({"status": "error", "message": "session_token required"}, status=400)
+
+            # delete session from DB
+            db["sessions"].delete_one({"session_token": session_token})
+
+            return JsonResponse({"status": "success", "message": "Logout successful"})
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
