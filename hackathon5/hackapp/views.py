@@ -16,6 +16,7 @@ from django.utils.decorators import method_decorator
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
 import json
+from bson import ObjectId
 # Create your views here.
 @api_view(["GET"])
 def welcome(request):   
@@ -211,24 +212,28 @@ HR Team
                 "message": str(e)
             }, status=500)
     # GET All active employees or search
-    def get(self, request):
-        query = request.GET.get("query")
+    def get(self, request, emp_oid=None):
+        try:
+            collection = db["employees"]
+            if emp_oid:
+                
+                emp = collection.find_one(
+                    {"_id": ObjectId(emp_oid), "deleted_yn": 0},
+                    {"_id": 0}
+                )
 
-        filter_query = {"deleted_yn": 0}
+                if not emp:
+                    return JsonResponse({"status": "error", "message": "Employee not found"}, status=404)
 
-        if query:
-            filter_query.update({
-                "$or": [
-                    {"name": {"$regex": query, "$options": "i"}},
-                    {"department": {"$regex": query, "$options": "i"}},
-                    {"role": {"$regex": query, "$options": "i"}},
-                ]
-            })
+                return JsonResponse({"status": "success", "employee": emp}, status=200)
 
-        employees = list(employee_collection.find(filter_query))
-        employees = [employee_to_json(emp) for emp in employees]
+            # GET all employees
+            employees = list(collection.find({"deleted_yn": 0}, {"_id": 0}))
+            return JsonResponse({"status": "success", "employees": employees}, status=200)
 
-        return Response(employees, 200)
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
 
     # UPDATE employee
     def put(self, request):
@@ -265,3 +270,65 @@ HR Team
         )
 
         return Response({"message": "Employee soft deleted"}, 200)
+
+class EmployeeUpdateView(APIView):
+    collection = db["employees"]
+
+    @method_decorator(csrf_exempt, name="dispatch")
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def put(self, request, emp_oid):
+        try:
+            collection = db["employees"]
+            data = json.loads(request.body.decode('utf-8'))
+
+            update_data = {
+                "name": data.get("name"),
+                "dob": data.get("dob"),
+                "email": data.get("email"),
+                "documents": data.get("documents", []),
+                "modified_date": datetime.now()
+            }
+
+            # Remove empty values
+            update_data = {k: v for k, v in update_data.items() if v is not None}
+
+            result = collection.update_one(
+                {"_id": ObjectId(emp_oid), "deleted_yn": 0},
+                {"$set": update_data}
+            )
+
+            if result.matched_count == 0:
+                return JsonResponse({"status": "error", "message": "Employee not found"}, status=404)
+
+            return JsonResponse({"status": "success", "message": "Employee updated successfully"}, status=200)
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+        
+class EmployeeDeleteView(APIView):
+
+    @method_decorator(csrf_exempt, name="dispatch")
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def delete(self, request, emp_oid):
+        collection = db["employees"]
+        try:
+            result = collection.update_one(
+                {"_id": ObjectId(emp_oid), "deleted_yn": 0},
+                {"$set": {
+                    "deleted_yn": 1,
+                    "modified_date": datetime.now()
+                }}
+            )
+
+            if result.matched_count == 0:
+                return JsonResponse({"status": "error", "message": "Employee not found or already deleted"}, status=404)
+
+            return JsonResponse({"status": "success", "message": "Employee soft deleted"}, status=200)
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
