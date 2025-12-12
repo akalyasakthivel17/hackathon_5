@@ -10,7 +10,7 @@ from rest_framework import status
 from bson.objectid import ObjectId
 from pymongo import MongoClient
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.core.mail import send_mail
@@ -532,15 +532,92 @@ class GrievanceAPI(APIView):
             )
     
     
-class GetGrievanceView(APIView):
+# class GetGrievanceView(APIView):
 
+#     def get(self, request, user_id):
+#         grievance_col = db["grievances"]
+#         employee_col = db["employees"]
+#         try:
+#             # ----------------------------
+#             # 1️⃣ Fetch employee role 
+#             # ----------------------------
+#             user = employee_col.find_one({"_id": ObjectId(user_id)})
+
+#             if not user:
+#                 return Response({
+#                     "status": "error",
+#                     "message": "Invalid user_id"
+#                 }, status=status.HTTP_400_BAD_REQUEST)
+
+#             user_role = user.get("role", "").lower()  # user / hr
+
+#             # ----------------------------
+#             # 2️⃣ Build MongoDB query
+#             # ----------------------------
+#             query = {}
+
+#             # USER → only their grievances
+#             if user_role == "user":
+#                 query["user_id"] = user_id
+
+#             # HR → see all grievances (no filter)
+#             elif user_role == "hr":
+#                 query = {}  # no restriction
+
+#             else:
+#                 return Response({
+#                     "status": "error",
+#                     "message": "Unauthorized role"
+#                 }, status=status.HTTP_403_FORBIDDEN)
+
+#             # ----------------------------
+#             # 3️⃣ Apply status filter
+#             # ----------------------------
+#             status_filter = request.GET.get("status", None)
+#             if status_filter:
+#                 query["status"] = status_filter.upper()
+
+#             # ----------------------------
+#             # 4️⃣ Fetch from MongoDB
+#             # ----------------------------
+#             grievances = list(grievance_col.find(query))
+
+#             # ----------------------------
+#             # 5️⃣ Format response
+#             # ----------------------------
+#             output = []
+#             for g in grievances:
+#                 output.append({
+#                     "_id": str(g["_id"]),
+#                     "category": g.get("category"),
+#                     "priority": g.get("priority"),
+#                     "subject": g.get("subject"),
+#                     "description": g.get("description"),
+#                     "status": g.get("status"),
+#                     "user_id": g.get("user_id"),
+#                     "created_date": g.get("created_date"),
+#                     "modified_date": g.get("modified_date"),
+#                 })
+
+#             return Response({
+#                 "status": "success",
+#                 "count": len(output),
+#                 "data": output
+#             }, status=status.HTTP_200_OK)
+
+#         except Exception as e:
+#             return Response({
+#                 "status": "error",
+#                 "message": str(e)
+#             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class GetGrievanceView(APIView):
     def get(self, request, user_id):
         grievance_col = db["grievances"]
         employee_col = db["employees"]
+
         try:
-            # ----------------------------
-            # 1️⃣ Fetch employee role 
-            # ----------------------------
+            # 1️⃣ Fetch employee role
             user = employee_col.find_one({"_id": ObjectId(user_id)})
 
             if not user:
@@ -549,20 +626,37 @@ class GetGrievanceView(APIView):
                     "message": "Invalid user_id"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            user_role = user.get("role", "").lower()  # user / hr
+            user_role = user.get("role", "").lower()  # user / hr / manager
 
-            # ----------------------------
-            # 2️⃣ Build MongoDB query
-            # ----------------------------
+            # 2️⃣ Build base query
             query = {}
 
             # USER → only their grievances
             if user_role == "user":
                 query["user_id"] = user_id
 
-            # HR → see all grievances (no filter)
+            # HR → see all grievances
             elif user_role == "hr":
-                query = {}  # no restriction
+                query = {}
+
+            # MANAGER → HR-raised grievances + grievances older than 7 days
+            elif user_role == "manager":
+
+                # Fetch list of HR employee IDs
+                hr_users = list(employee_col.find({"role": "HR"}, {"_id": 1}))
+                hr_ids = [str(u["_id"]) for u in hr_users]
+
+                # 7-Day old date
+                from datetime import datetime, timedelta
+                seven_days_ago = datetime.now() - timedelta(days=7)
+
+                # Manager logic: OR condition
+                query = {
+                    "$or": [
+                        {"user_id": {"$in": hr_ids}},                    # HR raised grievances
+                        {"created_date": {"$lte": seven_days_ago}}       # 7 days older grievances
+                    ]
+                }
 
             else:
                 return Response({
@@ -570,21 +664,24 @@ class GetGrievanceView(APIView):
                     "message": "Unauthorized role"
                 }, status=status.HTTP_403_FORBIDDEN)
 
-            # ----------------------------
-            # 3️⃣ Apply status filter
-            # ----------------------------
+            # 3️⃣ Apply status filter (optional)
             status_filter = request.GET.get("status", None)
             if status_filter:
-                query["status"] = status_filter.upper()
+                # If manager → status must be nested into OR conditions
+                if user_role == "manager":
+                    query = {
+                        "$and": [
+                            query,
+                            {"status": status_filter.upper()}
+                        ]
+                    }
+                else:
+                    query["status"] = status_filter.upper()
 
-            # ----------------------------
-            # 4️⃣ Fetch from MongoDB
-            # ----------------------------
+            # 4️⃣ Fetch grievances
             grievances = list(grievance_col.find(query))
 
-            # ----------------------------
             # 5️⃣ Format response
-            # ----------------------------
             output = []
             for g in grievances:
                 output.append({
@@ -610,6 +707,7 @@ class GetGrievanceView(APIView):
                 "status": "error",
                 "message": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class HRReplyGrievanceView(APIView):
 
@@ -690,3 +788,282 @@ class HRReplyGrievanceView(APIView):
         except Exception as e:
             return Response({"status": "error", "message": str(e)},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+class TaskCreateAssignAPI(APIView):
+
+    def post(self, request):
+        try:
+            task_col = db["tasks"]
+            employee_col = db["employees"]
+            data = request.data
+
+            # ----------------------------
+            # 1️⃣ Validate Required Fields
+            # ----------------------------
+            required_fields = ["title", "description", "assigned_to", "due_date"]
+            missing = [field for field in required_fields if field not in data]
+
+            if missing:
+                return Response({
+                    "status": "error",
+                    "message": f"Missing fields: {', '.join(missing)}"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # ----------------------------
+            # 2️⃣ Validate Employee Exists
+            # ----------------------------
+            employee_id = data["assigned_to"]
+
+            emp = employee_col.find_one({"_id": ObjectId(employee_id), "deleted_yn": 0})
+            if not emp:
+                return Response({
+                    "status": "error",
+                    "message": "Assigned employee does not exist"
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            # ----------------------------
+            # 3️⃣ Handle Initial Comment
+            # ----------------------------
+            comments_list = []
+            if data.get("comment"):
+                comments_list.append({
+                    "comment_text": data["comment"],
+                    "commented_by": data.get("created_by"),
+                    "commented_date": datetime.now()
+                })
+
+            # ----------------------------
+            # 4️⃣ Prepare Task Document
+            # ----------------------------
+            task_data = {
+                "title": data["title"],
+                "description": data["description"],
+                "assigned_to": employee_id,
+                "status": "ASSIGNED",  # INITIAL STATUS
+                "priority": data.get("priority", "MEDIUM"),
+                "due_date": datetime.fromisoformat(data["due_date"]),
+                "created_by": data.get("created_by"),
+                "comments": comments_list,
+                "created_date": datetime.now(),
+                "modified_date": datetime.now(),
+                "deleted_yn": 0
+            }
+
+            # ----------------------------
+            # 5️⃣ Insert into MongoDB
+            # ----------------------------
+            result = task_col.insert_one(task_data)
+            task_data["_id"] = str(result.inserted_id)
+
+            return Response({
+                "status": "success",
+                "message": "Task created and assigned successfully",
+                "task": task_data
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+class TaskUpdateAPI(APIView):
+
+    def put(self, request, task_id):
+        try:
+            task_col = db["tasks"]
+            employee_col = db["employees"]
+            data = request.data
+
+            # ------------------------------
+            # 1️⃣ Fetch existing task
+            # ------------------------------
+            task = task_col.find_one({
+                "_id": ObjectId(task_id),
+                "deleted_yn": 0
+            })
+
+            if not task:
+                return Response({
+                    "status": "error",
+                    "message": "Task not found"
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            update_data = {}
+
+            # ------------------------------
+            # 2️⃣ Update Status (Optional)
+            # ------------------------------
+            if "status" in data:
+                update_data["status"] = data["status"].upper()
+
+            # ------------------------------
+            # 3️⃣ Reassign to another employee (Optional)
+            # ------------------------------
+            if "assigned_to" in data:
+                new_emp_id = data["assigned_to"]
+
+                emp = employee_col.find_one({
+                    "_id": ObjectId(new_emp_id),
+                    "deleted_yn": 0
+                })
+
+                if not emp:
+                    return Response({
+                        "status": "error",
+                        "message": "Reassign employee not found"
+                    }, status=status.HTTP_404_NOT_FOUND)
+
+                update_data["assigned_to"] = new_emp_id
+
+            # ------------------------------
+            # 4️⃣ Add a new comment (Optional)
+            # ------------------------------
+            if "comment" in data:
+                new_comment = {
+                    "comment_text": data["comment"],
+                    "commented_by": data.get("updated_by"),
+                    "commented_date": datetime.utcnow()
+                }
+
+                task_col.update_one(
+                    {"_id": ObjectId(task_id)},
+                    {"$push": {"comments": new_comment}}
+                )
+
+            # ------------------------------
+            # 5️⃣ Update modified_date
+            # ------------------------------
+            update_data["modified_date"] = datetime.utcnow()
+
+            # ------------------------------
+            # 6️⃣ Apply Update
+            # ------------------------------
+            if update_data:
+                task_col.update_one(
+                    {"_id": ObjectId(task_id)},
+                    {"$set": update_data}
+                )
+
+            # ------------------------------
+            # 7️⃣ Return Updated Task
+            # ------------------------------
+            updated_task = task_col.find_one({"_id": ObjectId(task_id)})
+
+            updated_task["_id"] = str(updated_task["_id"])
+
+            return Response({
+                "status": "success",
+                "message": "Task updated successfully",
+                "task": updated_task
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class TaskListByEmployeeAPI(APIView):
+
+    def get(self, request, emp_id):
+        try:
+            task_col = db["tasks"]
+            # ----------------------------
+            # 1️⃣ Validate employee ID
+            # ----------------------------
+            try:
+                ObjectId(emp_id)
+            except:
+                return Response({
+                    "status": "error",
+                    "message": "Invalid employee ObjectId"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # ----------------------------
+            # 2️⃣ Filter tasks assigned to this employee
+            # ----------------------------
+            tasks = list(task_col.find(
+                {
+                    "assigned_to": emp_id,
+                    "deleted_yn": 0
+                }
+            ))
+
+            # ----------------------------
+            # 3️⃣ Format output
+            # ----------------------------
+            output = []
+            for t in tasks:
+                output.append({
+                    "task_id": str(t["_id"]),
+                    "title": t.get("title"),
+                    "description": t.get("description"),
+                    "status": t.get("status"),
+                    "priority": t.get("priority"),
+                    "assigned_to": t.get("assigned_to"),
+                    "due_date": t.get("due_date"),
+                    "comments": t.get("comments", []),
+                    "created_date": t.get("created_date"),
+                    "modified_date": t.get("modified_date")
+                })
+
+            return Response({
+                "status": "success",
+                "count": len(output),
+                "tasks": output
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+class TaskDeleteAPI(APIView):
+
+    def delete(self, request, task_id):
+        try:
+            task_col = db["tasks"]
+            # ----------------------------
+            # 1️⃣ Validate Task ID
+            # ----------------------------
+            try:
+                oid = ObjectId(task_id)
+            except:
+                return Response({
+                    "status": "error",
+                    "message": "Invalid task ObjectId"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # ----------------------------
+            # 2️⃣ Fetch Task
+            # ----------------------------
+            task = task_col.find_one({"_id": oid, "deleted_yn": 0})
+
+            if not task:
+                return Response({
+                    "status": "error",
+                    "message": "Task not found or already deleted"
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            # ----------------------------
+            # 3️⃣ Soft Delete Action
+            # ----------------------------
+            task_col.update_one(
+                {"_id": oid},
+                {
+                    "$set": {
+                        "deleted_yn": 1,
+                        "modified_date": datetime.utcnow()
+                    }
+                }
+            )
+
+            return Response({
+                "status": "success",
+                "message": "Task deleted successfully (soft delete)"
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
