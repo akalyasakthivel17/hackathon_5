@@ -164,6 +164,7 @@ class EmployeeAPI(APIView):
                 "emp_id": emp_id,
                 "name": name,
                 "dob": dob,
+                "dpartment": data.get("department"),
                 "email": email,
                 "office_mail":office_mail,
                 "role":role,
@@ -250,8 +251,8 @@ HR Team
             if emp_oid:
                 emp = collection.find_one(
                     {"_id": ObjectId(emp_oid), "deleted_yn": 0},
-                    {"_id": 1, "emp_id": 1, "name": 1, "dob": 1, "email": 1,"office_mail":1,
-                    "documents": 1, "password": 1, "created_date": 1,
+                    {"_id": 1, "emp_id": 1, "name": 1, "dob": 1, "email": 1,"office_mail":1,"department":1,
+                    "role":1,"documents": 1, "password": 1, "created_date": 1,
                     "modified_date": 1, "deleted_yn": 1}
                 )
 
@@ -269,7 +270,7 @@ HR Team
                 collection.find(
                     {"deleted_yn": 0},
                     {"_id": 1, "emp_id": 1, "name": 1, "dob": 1, "email": 1,"office_mail":1,
-                    "documents": 1, "password": 1, "created_date": 1,
+                    "department":1,"role":1,"documents": 1, "password": 1, "created_date": 1,
                     "modified_date": 1, "deleted_yn": 1}
                 )
             )
