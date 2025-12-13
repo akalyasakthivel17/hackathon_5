@@ -10,7 +10,7 @@ from rest_framework import status
 from bson.objectid import ObjectId
 from pymongo import MongoClient
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.core.mail import send_mail
@@ -150,6 +150,7 @@ class EmployeeAPI(APIView):
             name = data.get("name")
             dob = data.get("dob")
             email = data.get("email")
+            office_mail=data.get("office_mail")
             role = data.get("role", "USER")
             documents = data.get("documents", [])
 
@@ -164,6 +165,7 @@ class EmployeeAPI(APIView):
                 "name": name,
                 "dob": dob,
                 "email": email,
+                "office_mail":office_mail,
                 "role":role,
                 "documents": documents,
                 "password": password,
@@ -184,7 +186,7 @@ Hello {name},
 Your employee account has been created.
 
 Employee ID: {emp_id}
-Email: {email}
+Email: {office_mail}
 Password: {password}
 
 Please change your password on first login.
@@ -248,7 +250,7 @@ HR Team
             if emp_oid:
                 emp = collection.find_one(
                     {"_id": ObjectId(emp_oid), "deleted_yn": 0},
-                    {"_id": 1, "emp_id": 1, "name": 1, "dob": 1, "email": 1,
+                    {"_id": 1, "emp_id": 1, "name": 1, "dob": 1, "email": 1,"office_mail":1,
                     "documents": 1, "password": 1, "created_date": 1,
                     "modified_date": 1, "deleted_yn": 1}
                 )
@@ -266,7 +268,7 @@ HR Team
             employees = list(
                 collection.find(
                     {"deleted_yn": 0},
-                    {"_id": 1, "emp_id": 1, "name": 1, "dob": 1, "email": 1,
+                    {"_id": 1, "emp_id": 1, "name": 1, "dob": 1, "email": 1,"office_mail":1,
                     "documents": 1, "password": 1, "created_date": 1,
                     "modified_date": 1, "deleted_yn": 1}
                 )
@@ -312,7 +314,7 @@ HR Team
             {
                 "$set": {
                     "deleted_yn": 1,
-                    "updated_at": datetime.utcnow()
+                    "updated_at": datetime.now()
                 }
             }
         )
@@ -399,7 +401,7 @@ class SignIn(APIView):
             hashed_pw = hash_password(password)
 
             # Check employee in MongoDB
-            emp = collection.find_one({"email": email, "password": password, "deleted_yn": 0})
+            emp = collection.find_one({"office_mail": email, "password": password, "deleted_yn": 0})
 
             if not emp:
                 return JsonResponse({"status": "error", "message": "Invalid credentials"}, status=400)
@@ -865,21 +867,15 @@ class TaskCreateAssignAPI(APIView):
                 "status": "error",
                 "message": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-class TaskUpdateAPI(APIView):
-
+class UpdateTaskView(APIView):
     def put(self, request, task_id):
         try:
             task_col = db["tasks"]
-            employee_col = db["employees"]
-            data = request.data
 
-            # ------------------------------
-            # 1️⃣ Fetch existing task
-            # ------------------------------
-            task = task_col.find_one({
-                "_id": ObjectId(task_id),
-                "deleted_yn": 0
-            })
+            # ----------------------------------------
+            # 1️⃣ Fetch task
+            # ----------------------------------------
+            task = task_col.find_one({"_id": ObjectId(task_id)})
 
             if not task:
                 return Response({
@@ -887,73 +883,118 @@ class TaskUpdateAPI(APIView):
                     "message": "Task not found"
                 }, status=status.HTTP_404_NOT_FOUND)
 
-            update_data = {}
+            # ----------------------------------------
+            # 2️⃣ Extract update fields
+            # ----------------------------------------
+            new_status = request.data.get("status")
+            comment = request.data.get("comment")
+            manager_rating = request.data.get("manager_rating")  # only for COMPLETED
+            reassign_to = request.data.get("reassign_to")
 
-            # ------------------------------
-            # 2️⃣ Update Status (Optional)
-            # ------------------------------
-            if "status" in data:
-                update_data["status"] = data["status"].upper()
+            update_data = {
+                "modified_date": datetime.utcnow()
+            }
 
-            # ------------------------------
-            # 3️⃣ Reassign to another employee (Optional)
-            # ------------------------------
-            if "assigned_to" in data:
-                new_emp_id = data["assigned_to"]
+            # ----------------------------------------
+            # 3️⃣ Handle Status Change
+            # ----------------------------------------
+            if new_status:
+                update_data["status"] = new_status.upper()
 
-                emp = employee_col.find_one({
-                    "_id": ObjectId(new_emp_id),
-                    "deleted_yn": 0
+            # ----------------------------------------
+            # 4️⃣ Handle Comment Append
+            # ----------------------------------------
+            if comment:
+                existing_comments = task.get("comments", [])
+                existing_comments.append({
+                    "comment": comment,
+                    "timestamp": datetime.utcnow().isoformat()
                 })
+                update_data["comments"] = existing_comments
 
-                if not emp:
-                    return Response({
-                        "status": "error",
-                        "message": "Reassign employee not found"
-                    }, status=status.HTTP_404_NOT_FOUND)
+            # ----------------------------------------
+            # 5️⃣ Handle Reassign Employee
+            # ----------------------------------------
+            if reassign_to:
+                update_data["assigned_to"] = reassign_to
+                update_data["status"] = "ASSIGNED"
 
-                update_data["assigned_to"] = new_emp_id
+            # ----------------------------------------
+            # 6️⃣ Automated Final Scoring (Triggered on COMPLETED)
+            # ----------------------------------------
+            final_score = None
+            final_reason = None
 
-            # ------------------------------
-            # 4️⃣ Add a new comment (Optional)
-            # ------------------------------
-            if "comment" in data:
-                new_comment = {
-                    "comment_text": data["comment"],
-                    "commented_by": data.get("updated_by"),
-                    "commented_date": datetime.utcnow()
-                }
+            if new_status and new_status.upper() == "COMPLETED":
 
-                task_col.update_one(
-                    {"_id": ObjectId(task_id)},
-                    {"$push": {"comments": new_comment}}
-                )
+                # --------------------------
+                # Deadline Parsing (❗fixed)
+                # --------------------------
+                deadline_str = task.get("deadline", None)
+                on_time = False
 
-            # ------------------------------
-            # 5️⃣ Update modified_date
-            # ------------------------------
-            update_data["modified_date"] = datetime.utcnow()
+                try:
+                    if deadline_str:
+                        # Convert stored string → datetime
+                        deadline_dt = datetime.fromisoformat(deadline_str.replace("Z", ""))
+                        on_time = datetime.now() <= deadline_dt
+                except:
+                    # If invalid date format → treat as "not on time"
+                    on_time = False
 
-            # ------------------------------
-            # 6️⃣ Apply Update
-            # ------------------------------
-            if update_data:
-                task_col.update_one(
-                    {"_id": ObjectId(task_id)},
-                    {"$set": update_data}
-                )
+                # Scoring
+                score = 0
 
-            # ------------------------------
-            # 7️⃣ Return Updated Task
-            # ------------------------------
-            updated_task = task_col.find_one({"_id": ObjectId(task_id)})
+                # Manager rating → 50%
+                if manager_rating:
+                    score += (manager_rating * 10)
 
-            updated_task["_id"] = str(updated_task["_id"])
+                # Deadline score → 30%
+                if on_time:
+                    score += 30
+                else:
+                    score += 10
 
+                # Comment-based quality → 20%
+                if comment and ("completed" in comment.lower() or "done" in comment.lower()):
+                    score += 20
+                else:
+                    score += 10
+
+                final_score = min(score, 100)
+
+                # Reason
+                reason_list = []
+                if manager_rating:
+                    reason_list.append(f"Manager rating contributed {manager_rating * 10} points.")
+                if on_time:
+                    reason_list.append("Task was completed before deadline (+30).")
+                else:
+                    reason_list.append("Task was completed after deadline (-20).")
+                if comment:
+                    reason_list.append("Comment indicated completion quality (+20).")
+
+                final_reason = " ".join(reason_list)
+
+                update_data["final_score"] = final_score
+                update_data["final_reason"] = final_reason
+
+            # ----------------------------------------
+            # 7️⃣ Update MongoDB
+            # ----------------------------------------
+            task_col.update_one(
+                {"_id": ObjectId(task_id)},
+                {"$set": update_data}
+            )
+
+            # ----------------------------------------
+            # 8️⃣ Success Response
+            # ----------------------------------------
             return Response({
                 "status": "success",
                 "message": "Task updated successfully",
-                "task": updated_task
+                "final_score": final_score,
+                "score_reason": final_reason
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -961,6 +1002,7 @@ class TaskUpdateAPI(APIView):
                 "status": "error",
                 "message": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class TaskListByEmployeeAPI(APIView):
 
@@ -1002,6 +1044,8 @@ class TaskListByEmployeeAPI(APIView):
                     "assigned_to": t.get("assigned_to"),
                     "due_date": t.get("due_date"),
                     "comments": t.get("comments", []),
+                    "final_score": t.get("final_score"),
+                    "final_reason": t.get("final_reason"),
                     "created_date": t.get("created_date"),
                     "modified_date": t.get("modified_date")
                 })
