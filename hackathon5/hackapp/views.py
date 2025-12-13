@@ -175,7 +175,7 @@ class EmployeeAPI(APIView):
                 "deleted_yn": 0
             }
 
-            collection.insert_one(employee_data)
+            # collection.insert_one(employee_data)
 
             # ------------------------
             # SEND WELCOME EMAIL
@@ -204,10 +204,11 @@ HR Team
                     to=[email]
                 )
                 msg.send()
+                collection.insert_one(employee_data)
             except Exception as mail_error:
                 return JsonResponse({
                     "status": "warning",
-                    "message": "Employee created but email not sent",
+                    "message": "Employee not created because email not sent",
                     "mail_error": str(mail_error)
                 }, status=207)
 
@@ -617,35 +618,47 @@ class GrievanceAPI(APIView):
 #             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class GetGrievanceView(APIView):
+
     def get(self, request, user_id):
+
         grievance_col = db["grievances"]
         employee_col = db["employees"]
 
         try:
-            # ----------------------------
-            # 1️⃣ Validate employee
-            # ----------------------------
+            # -------------------------------------------------
+            # 1️⃣ Validate Logged-in Employee
+            # -------------------------------------------------
+            if not ObjectId.is_valid(user_id):
+                return Response({
+                    "status": "error",
+                    "message": "Invalid user_id format"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
             user = employee_col.find_one({"_id": ObjectId(user_id)})
 
             if not user:
                 return Response({
                     "status": "error",
-                    "message": "Invalid user_id"
+                    "message": "User not found"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            user_role = user.get("role", "").lower()
+            user_role = user.get("role", "").lower()   # employee / hr / manager
 
-            # ----------------------------
-            # 2️⃣ Build query based on role
-            # ----------------------------
-            if user_role == "user":
-                query = {"user_id": user_id}
+            # -------------------------------------------------
+            # 2️⃣ Build Role-Based Query
+            # -------------------------------------------------
+            query = {}
 
+            # 👤 EMPLOYEE → Only their grievances
+            if user_role == "employee":
+                query = {"user_id": str(user["_id"])}
+
+            # 👥 HR → All grievances
             elif user_role == "hr":
                 query = {}
 
+            # 👔 MANAGER → HR grievances OR 7+ days old grievances
             elif user_role == "manager":
-                from datetime import datetime, timedelta
 
                 hr_users = employee_col.find(
                     {"role": {"$regex": "^hr$", "$options": "i"}},
@@ -668,30 +681,32 @@ class GetGrievanceView(APIView):
                     "message": "Unauthorized role"
                 }, status=status.HTTP_403_FORBIDDEN)
 
-            # ----------------------------
-            # 3️⃣ Status filter (optional)
-            # ----------------------------
+            # -------------------------------------------------
+            # 3️⃣ Optional Status Filter
+            # -------------------------------------------------
             status_filter = request.GET.get("status")
             if status_filter:
                 query["status"] = status_filter.upper()
 
-            # ----------------------------
-            # 4️⃣ Fetch grievances
-            # ----------------------------
+            # -------------------------------------------------
+            # 4️⃣ Fetch Grievances
+            # -------------------------------------------------
             grievances = list(grievance_col.find(query))
 
             response_data = []
 
-            # ----------------------------
-            # 5️⃣ Build response
-            # ----------------------------
+            # -------------------------------------------------
+            # 5️⃣ Build Response
+            # -------------------------------------------------
             for g in grievances:
 
-                # 🔹 Fetch grievance raiser name
-                raiser = employee_col.find_one(
-                    {"_id": ObjectId(g.get("user_id"))},
-                    {"name": 1, "role": 1}
-                )
+                # 🔹 Fetch grievance raiser safely
+                raiser = None
+                if ObjectId.is_valid(g.get("user_id", "")):
+                    raiser = employee_col.find_one(
+                        {"_id": ObjectId(g.get("user_id"))},
+                        {"name": 1, "role": 1}
+                    )
 
                 grievance_obj = {
                     "grievance_id": str(g["_id"]),
@@ -700,7 +715,7 @@ class GetGrievanceView(APIView):
                     "subject": g.get("subject"),
                     "description": g.get("description"),
                     "status": g.get("status"),
-                    "raised_by": raiser.get("name") if raiser else "Unknown",
+                    "raised_by": raiser.get("name") if raiser else g.get("user_id"),
                     "raised_by_role": raiser.get("role") if raiser else "Unknown",
                     "created_date": g.get("created_date"),
                     "modified_date": g.get("modified_date"),
@@ -710,14 +725,16 @@ class GetGrievanceView(APIView):
                 # 🔹 Combine all replies
                 for r in g.get("replies", []):
 
-                    reply_user = employee_col.find_one(
-                        {"_id": ObjectId(r.get("user_id"))},
-                        {"name": 1, "role": 1}
-                    )
+                    reply_user = None
+                    if ObjectId.is_valid(r.get("user_id", "")):
+                        reply_user = employee_col.find_one(
+                            {"_id": ObjectId(r.get("user_id"))},
+                            {"name": 1, "role": 1}
+                        )
 
                     grievance_obj["replies"].append({
                         "comment": r.get("comment"),
-                        "replied_by": reply_user.get("name") if reply_user else "Unknown",
+                        "replied_by": reply_user.get("name") if reply_user else r.get("user_id"),
                         "replied_by_role": reply_user.get("role") if reply_user else "Unknown",
                         "replied_date": r.get("created_date")
                     })
@@ -735,6 +752,7 @@ class GetGrievanceView(APIView):
                 "status": "error",
                 "message": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
     # def get(self, request, user_id):
     #     grievance_col = db["grievances"]

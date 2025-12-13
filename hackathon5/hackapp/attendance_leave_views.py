@@ -43,7 +43,7 @@ class AttendanceCheckInOut(APIView):
                     "message": "Employee not found"
                 }, status=404)
             
-            now = datetime.utcnow()
+            now = datetime.now()
             today = now.date()
             
             if action == "check-in":
@@ -262,8 +262,8 @@ class LeaveBalance(APIView):
                     "casual": 12,
                     "sick": 12,
                     "vacation": 15,
-                    "created_date": datetime.utcnow(),
-                    "updated_date": datetime.utcnow()
+                    "created_date": datetime.now(),
+                    "updated_date": datetime.now()
                 }
                 leave_balance_collection.insert_one(balance)
             
@@ -358,7 +358,7 @@ class LeaveApplication(APIView):
                 "days": days_requested,
                 "reason": reason,
                 "status": "pending",  # pending, approved, rejected
-                "applied_date": datetime.utcnow(),
+                "applied_date": datetime.now(),
                 "approved_by": None,
                 "approved_date": None
             }
@@ -460,7 +460,7 @@ class LeaveApproval(APIView):
                     "$set": {
                         "status": new_status,
                         "approved_by": manager_id,
-                        "approved_date": datetime.utcnow()
+                        "approved_date": datetime.now()
                     }
                 }
             )
@@ -471,7 +471,7 @@ class LeaveApproval(APIView):
                     {"emp_id": leave_app["emp_id"]},
                     {
                         "$inc": {leave_app["leave_type"]: -leave_app["days"]},
-                        "$set": {"updated_date": datetime.utcnow()}
+                        "$set": {"updated_date": datetime.now()}
                     }
                 )
             
