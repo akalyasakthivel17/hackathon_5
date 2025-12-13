@@ -1,0 +1,107 @@
+{
+    "info": {
+        "name": "Manager Attendance Dashboard API",
+        "description": "Manager dashboard API for viewing all employees' attendance overview.\n\nFeatures:\n- Overview statistics (total, present, checked out, attendance rate)\n- Complete employee attendance list\n- Today's status for each employee\n- This week attendance summary\n\nPerfect for manager dashboard UI.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Get Manager Attendance Dashboard",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://127.0.0.1:8000/api/attendance/manager/dashboard/",
+                    "protocol": "http",
+                    "host": [
+                        "127",
+                        "0",
+                        "0",
+                        "1"
+                    ],
+                    "port": "8000",
+                    "path": [
+                        "api",
+                        "attendance",
+                        "manager",
+                        "dashboard",
+                        ""
+                    ]
+                },
+                "description": "Get complete attendance dashboard for all employees.\n\nReturns:\n1. Overview Statistics:\n   - Total employees\n   - Present today\n   - Checked out\n   - Attendance rate %\n\n2. Employee Attendance List:\n   - Name, Department, Role\n   - Today's status (present/absent/checked_out)\n   - Check-in/Check-out times\n   - Working hours\n   - This week attendance\n\nNo parameters required - shows all employees."
+            },
+            "response": [
+                {
+                    "name": "Success Response - With Employees Present",
+                    "originalRequest": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/attendance/manager/dashboard/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "attendance",
+                                "manager",
+                                "dashboard",
+                                ""
+                            ]
+                        }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "_postman_previewlanguage": "json",
+                    "header": [
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "body": "{\n  \"status\": \"success\",\n  \"dashboard\": {\n    \"overview\": {\n      \"total_employees\": 15,\n      \"present_today\": 12,\n      \"checked_out\": 8,\n      \"attendance_rate\": 80.0\n    },\n    \"employee_attendance\": [\n      {\n        \"emp_id\": \"EMP015\",\n        \"name\": \"Vicky\",\n        \"department\": \"IT\",\n        \"role\": \"EMPLOYEE\",\n        \"today_status\": \"checked_out\",\n        \"check_in\": \"09:30:00\",\n        \"check_out\": \"18:30:00\",\n        \"hours\": 9.0,\n        \"this_week\": \"5/5 days\"\n      },\n      {\n        \"emp_id\": \"EMP016\",\n        \"name\": \"John\",\n        \"department\": \"HR\",\n        \"role\": \"HR\",\n        \"today_status\": \"present\",\n        \"check_in\": \"09:00:00\",\n        \"check_out\": null,\n        \"hours\": 0,\n        \"this_week\": \"5/5 days\"\n      },\n      {\n        \"emp_id\": \"EMP017\",\n        \"name\": \"Sarah\",\n        \"department\": \"Finance\",\n        \"role\": \"EMPLOYEE\",\n        \"today_status\": \"absent\",\n        \"check_in\": null,\n        \"check_out\": null,\n        \"hours\": 0,\n        \"this_week\": \"4/5 days\"\n      }\n    ]\n  }\n}"
+                },
+                {
+                    "name": "Success Response - No Employees",
+                    "originalRequest": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/attendance/manager/dashboard/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "attendance",
+                                "manager",
+                                "dashboard",
+                                ""
+                            ]
+                        }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "_postman_previewlanguage": "json",
+                    "header": [
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "body": "{\n  \"status\": \"success\",\n  \"dashboard\": {\n    \"overview\": {\n      \"total_employees\": 0,\n      \"present_today\": 0,\n      \"checked_out\": 0,\n      \"attendance_rate\": 0\n    },\n    \"employee_attendance\": []\n  }\n}"
+                }
+            ]
+        }
+    ]
+}

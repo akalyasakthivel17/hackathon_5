@@ -21,7 +21,8 @@ from hackapp.views import (welcome,EmployeeAPI, EmployeeUpdateView, EmployeeDele
                            DashboardAPI)
 from hackapp.attendance_leave_views import (
     AttendanceCheckInOut, AttendanceHistory, MonthlyAttendanceReport,
-    LeaveBalance, LeaveApplication, LeaveApproval, ManagerLeaveRequests
+    LeaveBalance, LeaveApplication, LeaveApproval, ManagerLeaveRequests,
+    ManagerAttendanceDashboard
 )
 from hackapp.events_engagement_views import (
     UpcomingBirthdays, TodayBirthdays,
@@ -69,7 +70,11 @@ urlpatterns = [
     path("api/leave/applications/<str:emp_id>", LeaveApplication.as_view()),
     path("api/leave/approve/<str:leave_id>", LeaveApproval.as_view()),
     path("api/leave/manager/requests/", ManagerLeaveRequests.as_view()),
-        # Birthdays APIs
+    
+    # Manager Attendance Dashboard
+    path("api/attendance/manager/dashboard/", ManagerAttendanceDashboard.as_view()),
+    
+    # Birthdays APIs
     path("api/events/birthdays/upcoming/", UpcomingBirthdays.as_view()),
     path("api/events/birthdays/today/", TodayBirthdays.as_view()),
     

@@ -539,3 +539,99 @@ class ManagerLeaveRequests(APIView):
                 "status": "error",
                 "message": str(e)
             }, status=500)
+
+
+# --------------------------
+# MANAGER ATTENDANCE DASHBOARD
+# --------------------------
+@method_decorator(csrf_exempt, name='dispatch')
+class ManagerAttendanceDashboard(APIView):
+    """Manager dashboard - Overview of all employees' attendance"""
+    
+    def get(self, request):
+        try:
+            today = datetime.utcnow().date()
+            today_str = str(today)
+            
+            # Get all active employees
+            all_employees = list(employee_collection.find({"deleted_yn": 0}))
+            
+            total_employees = len(all_employees)
+            present_today = 0
+            checked_out = 0
+            
+            employee_attendance_list = []
+            
+            for emp in all_employees:
+                emp_id = emp.get("emp_id")
+                emp_name = emp.get("name", "Unknown")
+                emp_department = emp.get("department", "N/A")
+                emp_role = emp.get("role", "EMPLOYEE")
+                
+                # Get today's attendance
+                attendance = attendance_collection.find_one({
+                    "emp_id": emp_id,
+                    "date": today_str
+                })
+                
+                if attendance:
+                    present_today += 1
+                    check_in = attendance.get("check_in")
+                    check_out = attendance.get("check_out")
+                    working_hours = attendance.get("working_hours", 0)
+                    
+                    if check_out:
+                        checked_out += 1
+                        today_status = "checked_out"
+                    else:
+                        today_status = "present"
+                    
+                    # Format times
+                    check_in_time = check_in.strftime("%H:%M:%S") if check_in else None
+                    check_out_time = check_out.strftime("%H:%M:%S") if check_out else None
+                else:
+                    today_status = "absent"
+                    check_in_time = None
+                    check_out_time = None
+                    working_hours = 0
+                
+                # Get this week's attendance count
+                week_start = today - timedelta(days=today.weekday())
+                week_records = attendance_collection.count_documents({
+                    "emp_id": emp_id,
+                    "date": {"$gte": str(week_start), "$lte": today_str}
+                })
+                
+                employee_attendance_list.append({
+                    "emp_id": emp_id,
+                    "name": emp_name,
+                    "department": emp_department,
+                    "role": emp_role,
+                    "today_status": today_status,
+                    "check_in": check_in_time,
+                    "check_out": check_out_time,
+                    "hours": round(working_hours, 2),
+                    "this_week": f"{week_records}/{today.weekday() + 1} days"
+                })
+            
+            # Calculate attendance rate
+            attendance_rate = round((present_today / total_employees * 100), 2) if total_employees > 0 else 0
+            
+            return JsonResponse({
+                "status": "success",
+                "dashboard": {
+                    "overview": {
+                        "total_employees": total_employees,
+                        "present_today": present_today,
+                        "checked_out": checked_out,
+                        "attendance_rate": attendance_rate
+                    },
+                    "employee_attendance": employee_attendance_list
+                }
+            }, status=200)
+        
+        except Exception as e:
+            return JsonResponse({
+                "status": "error",
+                "message": str(e)
+            }, status=500)
