@@ -153,6 +153,7 @@ class EmployeeAPI(APIView):
             office_mail=data.get("office_mail")
             role = data.get("role", "USER")
             documents = data.get("documents", [])
+            picture=data.get("picture")
 
             # Generate EMP001, EMP002, ...
             emp_id = generate_employee_id()
@@ -169,6 +170,7 @@ class EmployeeAPI(APIView):
                 "office_mail":office_mail,
                 "role":role,
                 "documents": documents,
+                "profile_pic":picture,
                 "password": password,
                 "created_date": datetime.now(),
                 "modified_date": datetime.now(),
@@ -245,46 +247,77 @@ HR Team
 
     #     except Exception as e:
     #         return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
     def get(self, request, emp_oid=None):
         try:
             collection = db["employees"]
 
+            projection = {
+                "_id": 1,
+                "emp_id": 1,
+                "name": 1,
+                "dob": 1,
+                "email": 1,
+                "office_mail": 1,
+                "department": 1,
+                "role": 1,
+                "documents": 1,
+                "profile_pic": 1,   # ✅ IMPORTANT
+                "created_date": 1,
+                "modified_date": 1,
+                "deleted_yn": 1
+            }
+
+            # --------------------------------
+            # 🔹 GET SINGLE EMPLOYEE
+            # --------------------------------
             if emp_oid:
+                if not ObjectId.is_valid(emp_oid):
+                    return JsonResponse(
+                        {"status": "error", "message": "Invalid employee ObjectId"},
+                        status=400
+                    )
+
                 emp = collection.find_one(
                     {"_id": ObjectId(emp_oid), "deleted_yn": 0},
-                    {"_id": 1, "emp_id": 1, "name": 1, "dob": 1, "email": 1,"office_mail":1,"department":1,
-                    "role":1,"documents": 1, "password": 1, "created_date": 1,
-                    "modified_date": 1, "deleted_yn": 1}
+                    projection
                 )
 
                 if not emp:
-                    return JsonResponse({"status": "error", "message": "Employee not found"}, status=404)
+                    return JsonResponse(
+                        {"status": "error", "message": "Employee not found"},
+                        status=404
+                    )
 
-                # Convert ObjectId to string
                 emp["emp_oid"] = str(emp["_id"])
                 del emp["_id"]
 
-                return JsonResponse({"status": "success", "employee": emp}, status=200)
-
-            # GET all employees
-            employees = list(
-                collection.find(
-                    {"deleted_yn": 0},
-                    {"_id": 1, "emp_id": 1, "name": 1, "dob": 1, "email": 1,"office_mail":1,
-                    "department":1,"role":1,"documents": 1, "password": 1, "created_date": 1,
-                    "modified_date": 1, "deleted_yn": 1}
+                return JsonResponse(
+                    {"status": "success", "employee": emp},
+                    status=200
                 )
+
+            # --------------------------------
+            # 🔹 GET ALL EMPLOYEES
+            # --------------------------------
+            employees = list(
+                collection.find({"deleted_yn": 0}, projection)
             )
 
-            # Convert OID for all
             for emp in employees:
                 emp["emp_oid"] = str(emp["_id"])
                 del emp["_id"]
 
-            return JsonResponse({"status": "success", "employees": employees}, status=200)
+            return JsonResponse(
+                {"status": "success", "employees": employees},
+                status=200
+            )
 
         except Exception as e:
-            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+            return JsonResponse(
+                {"status": "error", "message": str(e)},
+                status=500
+            )
 
 
     # UPDATE employee
@@ -295,7 +328,7 @@ HR Team
             return Response({"error": "Employee ID missing"}, 400)
 
         update_fields = request.data
-        update_fields["updated_at"] = datetime.utcnow()
+        update_fields["updated_at"] = datetime.now()
 
         employee_collection.update_one(
             {"_id": ObjectId(emp_id)},
@@ -623,6 +656,7 @@ class GetGrievanceView(APIView):
 
         grievance_col = db["grievances"]
         employee_col = db["employees"]
+        task_col = db["tasks"]
 
         try:
             # -------------------------------------------------
@@ -642,24 +676,19 @@ class GetGrievanceView(APIView):
                     "message": "User not found"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            user_role = user.get("role", "").lower()   # employee / hr / manager
+            user_role = user.get("role", "").lower()
+            user_id_str = str(user["_id"])
 
             # -------------------------------------------------
-            # 2️⃣ Build Role-Based Query
+            # 2️⃣ Build Grievance Query (UNCHANGED LOGIC)
             # -------------------------------------------------
-            query = {}
-
-            # 👤 EMPLOYEE → Only their grievances
             if user_role == "employee":
-                query = {"user_id": str(user["_id"])}
+                grievance_query = {"user_id": user_id_str}
 
-            # 👥 HR → All grievances
             elif user_role == "hr":
-                query = {}
+                grievance_query = {}
 
-            # 👔 MANAGER → HR grievances OR 7+ days old grievances
             elif user_role == "manager":
-
                 hr_users = employee_col.find(
                     {"role": {"$regex": "^hr$", "$options": "i"}},
                     {"_id": 1}
@@ -668,7 +697,7 @@ class GetGrievanceView(APIView):
 
                 seven_days_ago = datetime.utcnow() - timedelta(days=7)
 
-                query = {
+                grievance_query = {
                     "$or": [
                         {"user_id": {"$in": hr_ids}},
                         {"created_date": {"$lte": seven_days_ago}}
@@ -681,26 +710,20 @@ class GetGrievanceView(APIView):
                     "message": "Unauthorized role"
                 }, status=status.HTTP_403_FORBIDDEN)
 
-            # -------------------------------------------------
-            # 3️⃣ Optional Status Filter
-            # -------------------------------------------------
+            # Optional status filter
             status_filter = request.GET.get("status")
             if status_filter:
-                query["status"] = status_filter.upper()
+                grievance_query["status"] = status_filter.upper()
+
+            grievances = list(grievance_col.find(grievance_query))
+
+            grievance_data = []
 
             # -------------------------------------------------
-            # 4️⃣ Fetch Grievances
-            # -------------------------------------------------
-            grievances = list(grievance_col.find(query))
-
-            response_data = []
-
-            # -------------------------------------------------
-            # 5️⃣ Build Response
+            # 3️⃣ Build Grievance Response
             # -------------------------------------------------
             for g in grievances:
 
-                # 🔹 Fetch grievance raiser safely
                 raiser = None
                 if ObjectId.is_valid(g.get("user_id", "")):
                     raiser = employee_col.find_one(
@@ -722,9 +745,7 @@ class GetGrievanceView(APIView):
                     "replies": []
                 }
 
-                # 🔹 Combine all replies
                 for r in g.get("replies", []):
-
                     reply_user = None
                     if ObjectId.is_valid(r.get("user_id", "")):
                         reply_user = employee_col.find_one(
@@ -739,12 +760,51 @@ class GetGrievanceView(APIView):
                         "replied_date": r.get("created_date")
                     })
 
-                response_data.append(grievance_obj)
+                grievance_data.append(grievance_obj)
 
+            # -------------------------------------------------
+            # 4️⃣ FETCH TASKS (Assigned to me OR Created by me)
+            # -------------------------------------------------
+            task_query = {
+                "$or": [
+                    {"assigned_to": user_id_str},
+                    {"created_by": user_id_str}
+                ]
+            }
+
+            tasks = list(task_col.find(task_query))
+
+            task_data = []
+
+            for t in tasks:
+
+                assigned_user = None
+                if ObjectId.is_valid(t.get("assigned_to", "")):
+                    assigned_user = employee_col.find_one(
+                        {"_id": ObjectId(t.get("assigned_to"))},
+                        {"name": 1}
+                    )
+
+                task_data.append({
+                    "task_id": str(t["_id"]),
+                    "title": t.get("title"),
+                    "description": t.get("description"),
+                    "status": t.get("status"),
+                    "assigned_to": assigned_user.get("name") if assigned_user else t.get("assigned_to"),
+                    "created_by": t.get("created_by"),
+                    "created_date": t.get("created_date"),
+                    "modified_date": t.get("modified_date"),
+                })
+
+            # -------------------------------------------------
+            # 5️⃣ Final Combined Response
+            # -------------------------------------------------
             return Response({
                 "status": "success",
-                "count": len(response_data),
-                "data": response_data
+                "grievance_count": len(grievance_data),
+                "task_count": len(task_data),
+                "grievances": grievance_data,
+                "tasks": task_data
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -752,7 +812,6 @@ class GetGrievanceView(APIView):
                 "status": "error",
                 "message": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
     # def get(self, request, user_id):
     #     grievance_col = db["grievances"]
@@ -1032,7 +1091,7 @@ class UpdateTaskView(APIView):
             reassign_to = request.data.get("reassign_to")
 
             update_data = {
-                "modified_date": datetime.utcnow()
+                "modified_date": datetime.now()
             }
 
             # ----------------------------------------
@@ -1048,7 +1107,7 @@ class UpdateTaskView(APIView):
                 existing_comments = task.get("comments", [])
                 existing_comments.append({
                     "comment": comment,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now().isoformat()
                 })
                 update_data["comments"] = existing_comments
 
@@ -1165,7 +1224,10 @@ class TaskListByEmployeeAPI(APIView):
             # ----------------------------
             tasks = list(task_col.find(
                 {
-                    "assigned_to": emp_id,
+                    "$or": [
+                        {"assigned_to": emp_id},
+                        {"created_by": emp_id}
+                    ],
                     "deleted_yn": 0
                 }
             ))
@@ -1236,7 +1298,7 @@ class TaskDeleteAPI(APIView):
                 {
                     "$set": {
                         "deleted_yn": 1,
-                        "modified_date": datetime.utcnow()
+                        "modified_date": datetime.now()
                     }
                 }
             )
