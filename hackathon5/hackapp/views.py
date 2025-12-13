@@ -164,7 +164,7 @@ class EmployeeAPI(APIView):
                 "emp_id": emp_id,
                 "name": name,
                 "dob": dob,
-                "dpartment": data.get("department"),
+                "department": data.get("department"),
                 "email": email,
                 "office_mail":office_mail,
                 "role":role,
@@ -1112,3 +1112,41 @@ class TaskDeleteAPI(APIView):
                 "status": "error",
                 "message": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class empoyeedropdown(APIView):
+    def get(self, request, emp_oid=None):
+        try:
+            collection = db["employees"]
+
+            if emp_oid:
+                emp = collection.find_one(
+                    {"_id": ObjectId(emp_oid), "deleted_yn": 0},
+                    {"_id": 1, "emp_id": 1, "name": 1}
+                )
+
+                if not emp:
+                    return JsonResponse({"status": "error", "message": "Employee not found"}, status=404)
+
+                # Convert ObjectId to string
+                emp["emp_oid"] = str(emp["_id"])
+                del emp["_id"]
+
+                return JsonResponse({"status": "success", "employee": emp}, status=200)
+
+            # GET all employees
+            employees = list(
+                collection.find(
+                    {"deleted_yn": 0},
+                    {"_id": 1, "emp_id": 1, "name": 1}
+                )
+            )
+
+            # Convert OID for all
+            for emp in employees:
+                emp["emp_oid"] = str(emp["_id"])
+                del emp["_id"]
+
+            return JsonResponse({"status": "success", "employees": employees}, status=200)
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
