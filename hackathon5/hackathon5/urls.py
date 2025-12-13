@@ -35,6 +35,9 @@ from hackapp.travel_expense_views import (
     ExpenseApproval, ExpenseReimbursement, ReimbursementSummary
 )
 from hackapp.dashboard_ss_views import DashboardSSAPI
+from hackapp.asset_management_views import (
+    AssetManagementAPI, AssetAssignmentAPI, AssetDashboardAPI
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -105,4 +108,9 @@ urlpatterns = [
     
     # Dashboard SS API (Combined)
     path("api/dashboard_ss/", DashboardSSAPI.as_view()),
+    
+    # Asset Management APIs (Task 8)
+    path("api/assets/", AssetManagementAPI.as_view()),
+    path("api/assets/assign/", AssetAssignmentAPI.as_view()),
+    path("api/assets/dashboard/", AssetDashboardAPI.as_view()),
 ]
