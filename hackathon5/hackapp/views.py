@@ -1150,3 +1150,97 @@ class empoyeedropdown(APIView):
 
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+class DashboardAPI(APIView):
+
+    def get(self, request, user_id):
+        try:
+            employee_col = db["employees"]
+            task_col = db["tasks"]
+
+            # --------------------------------------
+            # 1️⃣ Validate Employee
+            # --------------------------------------
+            try:
+                emp_oid = ObjectId(user_id)
+            except:
+                return Response({
+                    "status": "error",
+                    "message": "Invalid user_id"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            employee = employee_col.find_one({
+                "_id": emp_oid,
+                "deleted_yn": 0
+            })
+
+            if not employee:
+                return Response({
+                    "status": "error",
+                    "message": "Employee not found"
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            # --------------------------------------
+            # 2️⃣ Active Employee Metrics (GLOBAL)
+            # --------------------------------------
+            active_employees = list(
+                employee_col.find({"deleted_yn": 0})
+            )
+
+            department_counts = {}
+            for emp in active_employees:
+                dept = emp.get("department", "Unknown")
+                department_counts[dept] = department_counts.get(dept, 0) + 1
+
+            # --------------------------------------
+            # 3️⃣ Task Metrics (USER-SPECIFIC)
+            # --------------------------------------
+            now = datetime.now()
+            month_start = datetime(now.year, now.month, 1)
+
+            tasks = list(task_col.find({
+                "assigned_to": user_id,
+                "deleted_yn": 0
+            }))
+
+            assigned_count = 0
+            completed_count = 0
+
+            for task in tasks:
+                created_str = task.get("created_date")
+                if not created_str:
+                    continue
+
+                try:
+                    created_dt = datetime.fromisoformat(created_str.replace("Z", ""))
+                except:
+                    continue
+
+                if created_dt >= month_start:
+                    assigned_count += 1
+                    if task.get("status", "").upper() == "COMPLETED":
+                        completed_count += 1
+
+            remaining_count = assigned_count - completed_count
+
+            # --------------------------------------
+            # 4️⃣ Response
+            # --------------------------------------
+            return Response({
+                "status": "success",
+                "employee_metrics": {
+                    "total_active_employees": len(active_employees),
+                    "department_wise_count": department_counts
+                },
+                "task_metrics": {
+                    "assigned_this_month": assigned_count,
+                    "completed_this_month": completed_count,
+                    "remaining_tasks": remaining_count
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

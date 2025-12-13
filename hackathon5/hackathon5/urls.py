@@ -17,7 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from hackapp.views import (welcome,EmployeeAPI, EmployeeUpdateView, EmployeeDeleteView,SignIn,SignOut,GrievanceAPI, GetGrievanceView,
-                           HRReplyGrievanceView,TaskCreateAssignAPI,UpdateTaskView,TaskListByEmployeeAPI,TaskDeleteAPI,empoyeedropdown)
+                           HRReplyGrievanceView,TaskCreateAssignAPI,UpdateTaskView,TaskListByEmployeeAPI,TaskDeleteAPI,empoyeedropdown,
+                           DashboardAPI)
 from hackapp.attendance_leave_views import (
     AttendanceCheckInOut, AttendanceHistory, MonthlyAttendanceReport,
     LeaveBalance, LeaveApplication, LeaveApproval, ManagerLeaveRequests
@@ -51,6 +52,7 @@ urlpatterns = [
     path("api/task/<str:emp_id>/", TaskListByEmployeeAPI.as_view(), name="get-tasks-api"),
     path("api/delete_task/<task_id>/", TaskDeleteAPI.as_view(), name="get-all-tasks-api"),
     path("api/emp_dropdown/", empoyeedropdown.as_view(), name="employee-dropdown"),
+    path("api/dashboard/<str:user_id>/", DashboardAPI.as_view(), name="dashboard-api"),
     
     # Attendance APIs
     path("api/attendance/checkinout/", AttendanceCheckInOut.as_view()),
