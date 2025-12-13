@@ -411,6 +411,7 @@ class SignIn(APIView):
             session_token = hashlib.sha256(f"{email}{datetime.now()}".encode()).hexdigest()
 
             db["sessions"].insert_one({
+                "id": str(ObjectId(emp["_id"])),
                 "emp_id": emp["emp_id"],
                 "email": email,
                 "session_token": session_token,
@@ -421,6 +422,7 @@ class SignIn(APIView):
                 "status": "success",
                 "message": "Login successful",
                 "data": {
+                    "id": str(ObjectId(emp["_id"])),
                     "emp_id": emp["emp_id"],
                     "name": emp["name"],
                     "role": emp.get("role", "EMPLOYEE"),
@@ -620,7 +622,9 @@ class GetGrievanceView(APIView):
         employee_col = db["employees"]
 
         try:
-            # 1️⃣ Fetch employee role
+            # ----------------------------
+            # 1️⃣ Validate employee
+            # ----------------------------
             user = employee_col.find_one({"_id": ObjectId(user_id)})
 
             if not user:
@@ -629,35 +633,32 @@ class GetGrievanceView(APIView):
                     "message": "Invalid user_id"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            user_role = user.get("role", "").lower()  # user / hr / manager
+            user_role = user.get("role", "").lower()
 
-            # 2️⃣ Build base query
-            query = {}
-
-            # USER → only their grievances
+            # ----------------------------
+            # 2️⃣ Build query based on role
+            # ----------------------------
             if user_role == "user":
-                query["user_id"] = user_id
+                query = {"user_id": user_id}
 
-            # HR → see all grievances
             elif user_role == "hr":
                 query = {}
 
-            # MANAGER → HR-raised grievances + grievances older than 7 days
             elif user_role == "manager":
+                from datetime import datetime, timedelta
 
-                # Fetch list of HR employee IDs
-                hr_users = list(employee_col.find({"role": "HR"}, {"_id": 1}))
+                hr_users = employee_col.find(
+                    {"role": {"$regex": "^hr$", "$options": "i"}},
+                    {"_id": 1}
+                )
                 hr_ids = [str(u["_id"]) for u in hr_users]
 
-                # 7-Day old date
-                from datetime import datetime, timedelta
-                seven_days_ago = datetime.now() - timedelta(days=7)
+                seven_days_ago = datetime.utcnow() - timedelta(days=7)
 
-                # Manager logic: OR condition
                 query = {
                     "$or": [
-                        {"user_id": {"$in": hr_ids}},                    # HR raised grievances
-                        {"created_date": {"$lte": seven_days_ago}}       # 7 days older grievances
+                        {"user_id": {"$in": hr_ids}},
+                        {"created_date": {"$lte": seven_days_ago}}
                     ]
                 }
 
@@ -667,42 +668,66 @@ class GetGrievanceView(APIView):
                     "message": "Unauthorized role"
                 }, status=status.HTTP_403_FORBIDDEN)
 
-            # 3️⃣ Apply status filter (optional)
-            status_filter = request.GET.get("status", None)
+            # ----------------------------
+            # 3️⃣ Status filter (optional)
+            # ----------------------------
+            status_filter = request.GET.get("status")
             if status_filter:
-                # If manager → status must be nested into OR conditions
-                if user_role == "manager":
-                    query = {
-                        "$and": [
-                            query,
-                            {"status": status_filter.upper()}
-                        ]
-                    }
-                else:
-                    query["status"] = status_filter.upper()
+                query["status"] = status_filter.upper()
 
+            # ----------------------------
             # 4️⃣ Fetch grievances
+            # ----------------------------
             grievances = list(grievance_col.find(query))
 
-            # 5️⃣ Format response
-            output = []
+            response_data = []
+
+            # ----------------------------
+            # 5️⃣ Build response
+            # ----------------------------
             for g in grievances:
-                output.append({
-                    "_id": str(g["_id"]),
+
+                # 🔹 Fetch grievance raiser name
+                raiser = employee_col.find_one(
+                    {"_id": ObjectId(g.get("user_id"))},
+                    {"name": 1, "role": 1}
+                )
+
+                grievance_obj = {
+                    "grievance_id": str(g["_id"]),
                     "category": g.get("category"),
                     "priority": g.get("priority"),
                     "subject": g.get("subject"),
                     "description": g.get("description"),
                     "status": g.get("status"),
-                    "user_id": g.get("user_id"),
+                    "raised_by": raiser.get("name") if raiser else "Unknown",
+                    "raised_by_role": raiser.get("role") if raiser else "Unknown",
                     "created_date": g.get("created_date"),
                     "modified_date": g.get("modified_date"),
-                })
+                    "replies": []
+                }
+
+                # 🔹 Combine all replies
+                for r in g.get("replies", []):
+
+                    reply_user = employee_col.find_one(
+                        {"_id": ObjectId(r.get("user_id"))},
+                        {"name": 1, "role": 1}
+                    )
+
+                    grievance_obj["replies"].append({
+                        "comment": r.get("comment"),
+                        "replied_by": reply_user.get("name") if reply_user else "Unknown",
+                        "replied_by_role": reply_user.get("role") if reply_user else "Unknown",
+                        "replied_date": r.get("created_date")
+                    })
+
+                response_data.append(grievance_obj)
 
             return Response({
                 "status": "success",
-                "count": len(output),
-                "data": output
+                "count": len(response_data),
+                "data": response_data
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -710,6 +735,102 @@ class GetGrievanceView(APIView):
                 "status": "error",
                 "message": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # def get(self, request, user_id):
+    #     grievance_col = db["grievances"]
+    #     employee_col = db["employees"]
+
+    #     try:
+    #         # 1️⃣ Fetch employee role
+    #         user = employee_col.find_one({"_id": ObjectId(user_id)})
+
+    #         if not user:
+    #             return Response({
+    #                 "status": "error",
+    #                 "message": "Invalid user_id"
+    #             }, status=status.HTTP_400_BAD_REQUEST)
+
+    #         user_role = user.get("role", "").lower()  # user / hr / manager
+
+    #         # 2️⃣ Build base query
+    #         query = {}
+
+    #         # USER → only their grievances
+    #         if user_role == "user":
+    #             query["user_id"] = user_id
+
+    #         # HR → see all grievances
+    #         elif user_role == "hr":
+    #             query = {}
+
+    #         # MANAGER → HR-raised grievances + grievances older than 7 days
+    #         elif user_role == "manager":
+
+    #             # Fetch list of HR employee IDs
+    #             hr_users = list(employee_col.find({"role": "HR"}, {"_id": 1}))
+    #             hr_ids = [str(u["_id"]) for u in hr_users]
+
+    #             # 7-Day old date
+    #             from datetime import datetime, timedelta
+    #             seven_days_ago = datetime.now() - timedelta(days=7)
+
+    #             # Manager logic: OR condition
+    #             query = {
+    #                 "$or": [
+    #                     {"user_id": {"$in": hr_ids}},                    # HR raised grievances
+    #                     {"created_date": {"$lte": seven_days_ago}}       # 7 days older grievances
+    #                 ]
+    #             }
+
+    #         else:
+    #             return Response({
+    #                 "status": "error",
+    #                 "message": "Unauthorized role"
+    #             }, status=status.HTTP_403_FORBIDDEN)
+
+    #         # 3️⃣ Apply status filter (optional)
+    #         status_filter = request.GET.get("status", None)
+    #         if status_filter:
+    #             # If manager → status must be nested into OR conditions
+    #             if user_role == "manager":
+    #                 query = {
+    #                     "$and": [
+    #                         query,
+    #                         {"status": status_filter.upper()}
+    #                     ]
+    #                 }
+    #             else:
+    #                 query["status"] = status_filter.upper()
+
+    #         # 4️⃣ Fetch grievances
+    #         grievances = list(grievance_col.find(query))
+
+    #         # 5️⃣ Format response
+    #         output = []
+    #         for g in grievances:
+    #             output.append({
+    #                 "_id": str(g["_id"]),
+    #                 "category": g.get("category"),
+    #                 "priority": g.get("priority"),
+    #                 "subject": g.get("subject"),
+    #                 "description": g.get("description"),
+    #                 "status": g.get("status"),
+    #                 "user_id": g.get("user_id"),
+    #                 "created_date": g.get("created_date"),
+    #                 "modified_date": g.get("modified_date"),
+    #             })
+
+    #         return Response({
+    #             "status": "success",
+    #             "count": len(output),
+    #             "data": output
+    #         }, status=status.HTTP_200_OK)
+
+    #     except Exception as e:
+    #         return Response({
+    #             "status": "error",
+    #             "message": str(e)
+    #         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class HRReplyGrievanceView(APIView):
