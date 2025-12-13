@@ -695,7 +695,7 @@ class GetGrievanceView(APIView):
                 )
                 hr_ids = [str(u["_id"]) for u in hr_users]
 
-                seven_days_ago = datetime.utcnow() - timedelta(days=7)
+                seven_days_ago = datetime.now() - timedelta(days=7)
 
                 grievance_query = {
                     "$or": [
@@ -742,23 +742,33 @@ class GetGrievanceView(APIView):
                     "raised_by_role": raiser.get("role") if raiser else "Unknown",
                     "created_date": g.get("created_date"),
                     "modified_date": g.get("modified_date"),
-                    "replies": []
+                    "comments": []
                 }
 
-                for r in g.get("replies", []):
+                for c in g.get("comments", []):
+
                     reply_user = None
-                    if ObjectId.is_valid(r.get("user_id", "")):
+                    replied_by_name = None
+                    replied_by_role = c.get("by", "Unknown")
+
+                    # Fetch employee name using hr_id
+                    if ObjectId.is_valid(c.get("hr_id", "")):
                         reply_user = employee_col.find_one(
-                            {"_id": ObjectId(r.get("user_id"))},
+                            {"_id": ObjectId(c.get("hr_id"))},
                             {"name": 1, "role": 1}
                         )
 
-                    grievance_obj["replies"].append({
-                        "comment": r.get("comment"),
-                        "replied_by": reply_user.get("name") if reply_user else r.get("user_id"),
-                        "replied_by_role": reply_user.get("role") if reply_user else "Unknown",
-                        "replied_date": r.get("created_date")
+                        if reply_user:
+                            replied_by_name = reply_user.get("name")
+                            replied_by_role = reply_user.get("role")
+
+                    grievance_obj["comments"].append({
+                        "comment": c.get("reply"),   # ✅ correct key
+                        "replied_by": replied_by_name or c.get("by"),
+                        "replied_by_role": replied_by_role,
+                        "replied_date": c.get("created_date")
                     })
+
 
                 grievance_data.append(grievance_obj)
 
