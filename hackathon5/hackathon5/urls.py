@@ -34,6 +34,7 @@ from hackapp.travel_expense_views import (
     ExpenseSubmission, ExpenseDetail, ExpenseReceipt,
     ExpenseApproval, ExpenseReimbursement, ReimbursementSummary
 )
+from hackapp.dashboard_ss_views import DashboardSSAPI
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -101,4 +102,7 @@ urlpatterns = [
     path("api/expense/<str:expense_id>/approve/", ExpenseApproval.as_view()),
     path("api/expense/<str:expense_id>/reimburse/", ExpenseReimbursement.as_view()),
     path("api/expense/reimbursement/summary/<str:emp_id>", ReimbursementSummary.as_view()),
+    
+    # Dashboard SS API (Combined)
+    path("api/dashboard_ss/", DashboardSSAPI.as_view()),
 ]

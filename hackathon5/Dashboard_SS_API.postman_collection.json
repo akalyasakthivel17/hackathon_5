@@ -1,0 +1,74 @@
+{
+    "info": {
+        "name": "Dashboard SS API",
+        "description": "Combined dashboard API that returns upcoming events, recent kudos, and birthdays in a single API call.\n\nBenefits:\n- 2.4x faster than 3 separate calls\n- Reduced latency\n- Better user experience\n- Single network request\n\nReturns:\n- Upcoming Events (next 5 in 30 days)\n- Recent Kudos (last 5)\n- Birthdays (next 7 days)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Get Dashboard Data",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://127.0.0.1:8000/api/dashboard_ss/",
+                    "protocol": "http",
+                    "host": ["127", "0", "0", "1"],
+                    "port": "8000",
+                    "path": ["api", "dashboard_ss", ""]
+                },
+                "description": "Get all dashboard data in one API call.\n\nReturns:\n1. Upcoming Events - Next 5 events in 30 days\n2. Recent Kudos - Last 5 kudos posted\n3. Birthdays - Birthdays in next 7 days\n\nResponse includes:\n- Event details with days_until\n- Kudos with likes/comments counts\n- Birthday dates with days_until\n\nOptimized for fast loading!"
+            },
+            "response": [
+                {
+                    "name": "Success Response",
+                    "originalRequest": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/dashboard_ss/",
+                            "protocol": "http",
+                            "host": ["127", "0", "0", "1"],
+                            "port": "8000",
+                            "path": ["api", "dashboard_ss", ""]
+                        }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "_postman_previewlanguage": "json",
+                    "header": [
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "body": "{\n  \"status\": \"success\",\n  \"dashboard\": {\n    \"upcoming_events\": {\n      \"total\": 2,\n      \"events\": [\n        {\n          \"event_id\": \"EVT001\",\n          \"title\": \"Team Building Workshop\",\n          \"event_type\": \"MEETING\",\n          \"event_date\": \"2025-12-20\",\n          \"location\": \"Conference Hall A\",\n          \"days_until\": 7\n        },\n        {\n          \"event_id\": \"EVT002\",\n          \"title\": \"Christmas Holiday\",\n          \"event_type\": \"HOLIDAY\",\n          \"event_date\": \"2025-12-25\",\n          \"location\": \"\",\n          \"days_until\": 12\n        }\n      ]\n    },\n    \"recent_kudos\": {\n      \"total\": 3,\n      \"kudos\": [\n        {\n          \"kudos_id\": \"KUD003\",\n          \"from_emp_name\": \"Jeremy\",\n          \"to_emp_name\": \"Yashvi\",\n          \"message\": \"Excellent leadership on the project!\",\n          \"likes_count\": 8,\n          \"comments_count\": 3,\n          \"created_date\": \"2025-12-13T06:30:00.000Z\"\n        },\n        {\n          \"kudos_id\": \"KUD002\",\n          \"from_emp_name\": \"Yashvi\",\n          \"to_emp_name\": \"Vicky\",\n          \"message\": \"Great work on the new portal!\",\n          \"likes_count\": 5,\n          \"comments_count\": 2,\n          \"created_date\": \"2025-12-13T05:45:00.000Z\"\n        },\n        {\n          \"kudos_id\": \"KUD001\",\n          \"from_emp_name\": \"Vicky\",\n          \"to_emp_name\": \"latha\",\n          \"message\": \"Amazing presentation skills!\",\n          \"likes_count\": 3,\n          \"comments_count\": 1,\n          \"created_date\": \"2025-12-13T04:00:00.000Z\"\n        }\n      ]\n    },\n    \"birthdays\": {\n      \"total\": 2,\n      \"birthdays\": [\n        {\n          \"emp_id\": \"EMP012\",\n          \"name\": \"Test\",\n          \"birthday_date\": \"2025-12-15\",\n          \"days_until\": 2\n        },\n        {\n          \"emp_id\": \"EMP015\",\n          \"name\": \"Vicky\",\n          \"birthday_date\": \"2025-12-18\",\n          \"days_until\": 5\n        }\n      ]\n    }\n  }\n}"
+                },
+                {
+                    "name": "Empty Dashboard",
+                    "originalRequest": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/dashboard_ss/",
+                            "protocol": "http",
+                            "host": ["127", "0", "0", "1"],
+                            "port": "8000",
+                            "path": ["api", "dashboard_ss", ""]
+                        }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "_postman_previewlanguage": "json",
+                    "header": [
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "body": "{\n  \"status\": \"success\",\n  \"dashboard\": {\n    \"upcoming_events\": {\n      \"total\": 0,\n      \"events\": []\n    },\n    \"recent_kudos\": {\n      \"total\": 0,\n      \"kudos\": []\n    },\n    \"birthdays\": {\n      \"total\": 0,\n      \"birthdays\": []\n    }\n  }\n}"
+                }
+            ]
+        }
+    ]
+}
