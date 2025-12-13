@@ -935,9 +935,9 @@ class HRReplyGrievanceView(APIView):
                 return Response({"status": "error", "message": "Invalid HR user id"},
                                 status=status.HTTP_400_BAD_REQUEST)
 
-            if hr_user.get("role", "").lower() != "hr":
-                return Response({"status": "error", "message": "Only HR can reply to grievances"},
-                                status=status.HTTP_403_FORBIDDEN)
+            # if hr_user.get("role", "").lower() != "hr":
+            #     return Response({"status": "error", "message": "Only HR can reply to grievances"},
+            #                     status=status.HTTP_403_FORBIDDEN)
 
             # -----------------------------------------
             # 2️⃣ Read inputs
