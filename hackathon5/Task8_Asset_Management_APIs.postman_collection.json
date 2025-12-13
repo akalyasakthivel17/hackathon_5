@@ -1,0 +1,399 @@
+{
+    "info": {
+        "name": "Task 8 - Asset Management APIs",
+        "description": "Complete asset management system with 3 combined APIs.\n\nFeatures:\n- Add/Update/Delete assets\n- Assign assets to employees\n- Return workflow\n- Assignment history\n- Dashboard analytics\n\nCollections:\n- assets (auto-created)\n- asset_assignments (auto-created)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Asset Management (CRUD)",
+            "item": [
+                {
+                    "name": "Add New Asset",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"asset_name\": \"Dell Laptop XPS 15\",\n  \"asset_type\": \"LAPTOP\",\n  \"serial_number\": \"DL12345\",\n  \"purchase_date\": \"2024-01-15\",\n  \"purchase_cost\": 75000,\n  \"condition\": \"good\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/assets/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "assets",
+                                ""
+                            ]
+                        },
+                        "description": "Add new asset to inventory.\n\nValid asset_type: LAPTOP, DESKTOP, MONITOR, PHONE, KEYBOARD, MOUSE, OTHER\nValid condition: good, fair, poor"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List All Assets",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/assets/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "assets",
+                                ""
+                            ]
+                        },
+                        "description": "Get all assets.\n\nQuery params:\n- status: available/assigned/maintenance/retired\n- type: LAPTOP/DESKTOP/etc.\n- emp_id: Filter by assigned employee"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List Available Assets",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/assets/?status=available",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "assets",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "available"
+                                }
+                            ]
+                        },
+                        "description": "Get only available assets"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List Laptops",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/assets/?type=LAPTOP",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "assets",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "LAPTOP"
+                                }
+                            ]
+                        },
+                        "description": "Get only laptop assets"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Asset",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"asset_id\": \"AST001\",\n  \"asset_name\": \"Dell Laptop XPS 15 (Updated)\",\n  \"condition\": \"fair\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/assets/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "assets",
+                                ""
+                            ]
+                        },
+                        "description": "Update asset details.\n\nNote: Get asset_id from List Assets API"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Asset",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"asset_id\": \"AST001\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/assets/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "assets",
+                                ""
+                            ]
+                        },
+                        "description": "Soft delete asset.\n\nNote: Cannot delete assigned assets. Return them first."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Asset Assignment & Return",
+            "item": [
+                {
+                    "name": "Assign Asset to Employee",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"asset_id\": \"AST001\",\n  \"emp_id\": \"EMP015\",\n  \"notes\": \"For development work\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/assets/assign/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "assets",
+                                "assign",
+                                ""
+                            ]
+                        },
+                        "description": "Assign asset to employee.\n\nRequirements:\n- Asset must be available\n- Employee must exist\n\nWhat happens:\n1. Creates assignment record\n2. Updates asset status to 'assigned'\n3. Links asset to employee"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Return Asset",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"assignment_id\": \"ASGN001\",\n  \"condition\": \"good\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/assets/assign/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "assets",
+                                "assign",
+                                ""
+                            ]
+                        },
+                        "description": "Return asset.\n\nNote: Get assignment_id from assignment history\n\nWhat happens:\n1. Marks assignment as 'returned'\n2. Updates asset status to 'available'\n3. Updates asset condition\n4. Clears assigned_to field"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All Assignment History",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/assets/assign/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "assets",
+                                "assign",
+                                ""
+                            ]
+                        },
+                        "description": "Get all assignment history.\n\nQuery params:\n- emp_id: Filter by employee\n- asset_id: Filter by asset\n- status: active/returned"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Employee's Assignments",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/assets/assign/?emp_id=EMP015",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "assets",
+                                "assign",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "emp_id",
+                                    "value": "EMP015"
+                                }
+                            ]
+                        },
+                        "description": "Get all assignments for specific employee"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Active Assignments",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/assets/assign/?status=active",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "assets",
+                                "assign",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "active"
+                                }
+                            ]
+                        },
+                        "description": "Get only active (not returned) assignments"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Asset Dashboard",
+            "item": [
+                {
+                    "name": "Get Asset Dashboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/api/assets/dashboard/",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "8000",
+                            "path": [
+                                "api",
+                                "assets",
+                                "dashboard",
+                                ""
+                            ]
+                        },
+                        "description": "Get complete asset dashboard.\n\nIncludes:\n- Overview (total, available, assigned, etc.)\n- Assets by type breakdown\n- Recent assignments (last 5)\n- Assets needing attention (poor condition/maintenance)"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}
